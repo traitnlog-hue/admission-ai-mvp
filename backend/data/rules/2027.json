@@ -1,0 +1,6 @@
+{
+  "admission_year": 2027,
+  "status": "draft",
+  "notice": "공식 대학별 환산식 DB를 연결하기 전까지 MVP 진단 규칙으로만 사용합니다.",
+  "grading_system": "9등급"
+}

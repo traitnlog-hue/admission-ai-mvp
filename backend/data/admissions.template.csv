@@ -1,0 +1,2 @@
+year,university,department,track_key,admission_type,recruitment_count,grade_50_cut,grade_70_cut,competition_rate,additional_acceptance_rate,csat_minimum,interview,essay,caution,source_url,source_title,verified_at
+2027,대학교명,모집단위명,school_record,전형명,0,1.0,1.0,0.0,0.0,수능최저 조건,false,false,대학별 반영방법 및 변경사항을 입력,https://admission.example.ac.kr/guide.pdf,2027학년도 수시모집요강,2026-08-14

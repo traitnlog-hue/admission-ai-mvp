@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "is_sample_data": true,
+    "notice": "아래 값은 기능 테스트용 가상 데이터입니다. 실제 대학명·입시결과로 사용하면 안 됩니다."
+  },
+  "admissions": [
+    {
+      "year": 2027,
+      "university": "데모대학교 A",
+      "department": "컴퓨터공학과",
+      "track_key": "school_record",
+      "admission_type": "학생부교과우수자",
+      "previous_result": {"grade_50_cut": 1.7, "grade_70_cut": 2.1},
+      "caution": "수능최저와 대학별 교과 반영방법은 실제 모집요강에서 확인해야 합니다."
+    },
+    {
+      "year": 2027,
+      "university": "데모대학교 B",
+      "department": "소프트웨어학부",
+      "track_key": "student_record",
+      "admission_type": "학생부종합 탐구인재",
+      "previous_result": {"grade_50_cut": 2.0, "grade_70_cut": 2.6},
+      "caution": "서류와 면접 반영 비율, 지원자격은 실제 모집요강에서 확인해야 합니다."
+    },
+    {
+      "year": 2027,
+      "university": "데모대학교 C",
+      "department": "AI융합학부",
+      "track_key": "csat",
+      "admission_type": "수능 일반전형",
+      "previous_result": {"grade_50_cut": 1.5, "grade_70_cut": 2.2},
+      "caution": "표준점수·백분위 반영 비율과 탐구 선택과목은 실제 모집요강에서 확인해야 합니다."
+    },
+    {
+      "year": 2028,
+      "university": "데모대학교 D",
+      "department": "컴퓨터공학과",
+      "track_key": "student_record",
+      "admission_type": "학생부종합 성장인재",
+      "previous_result": {"grade_50_cut": 2.2, "grade_70_cut": 2.9},
+      "caution": "2028학년도 통합형 수능 및 내신 5등급제 세부 적용 기준을 확인해야 합니다."
+    },
+    {
+      "year": 2028,
+      "university": "데모대학교 E",
+      "department": "데이터사이언스학과",
+      "track_key": "csat",
+      "admission_type": "수능 일반전형",
+      "previous_result": {"grade_50_cut": 1.8, "grade_70_cut": 2.5},
+      "caution": "대학별 선택과목 지정과 수능 성적 반영방법을 확인해야 합니다."
+    }
+  ]
+}

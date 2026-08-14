@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>진로입시 AI | 학생 맞춤 전략 진단</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="#top"><span class="mark">A</span><span>진로입시 <b>AI</b></span></a>
+        <p class="sidebar-label">STUDENT CONSOLE</p>
+        <nav>
+          <a class="active" href="#diagnosis"><span>01</span>종합진단</a>
+          <a href="#record"><span>02</span>학생부 분석</a>
+          <a href="#major"><span>03</span>전공 적합도</a>
+          <a href="#strategy"><span>04</span>전형 전략</a>
+          <a href="#action"><span>05</span>Action Plan</a>
+        </nav>
+        <div class="side-note"><span class="dot"></span><p>공식 입시 DB 연동 전<br />전략 진단 모드입니다.</p></div>
+      </aside>
+
+      <main id="top">
+        <header class="topbar">
+          <button class="menu" aria-label="메뉴 열기">☰</button>
+          <div><p class="eyebrow">2027–2028 ADMISSIONS</p><h1>나만의 입시 전략, <em>데이터로</em> 설계하세요.</h1></div>
+          <button class="profile"><span>김</span> 학생 프로필 <i>⌄</i></button>
+        </header>
+
+        <section class="hero" id="diagnosis">
+          <div class="hero-copy"><p class="section-kicker">PERSONAL ADMISSIONS STRATEGY</p><h2>학생 한 명의 기록을<br /><strong>입시 전략</strong>으로 바꿉니다.</h2><p>내신·모의고사·학생부·희망 진로를 함께 읽고, 지금 가장 집중해야 할 선택을 안내합니다.</p></div>
+          <div class="hero-card"><span class="card-label">ANALYSIS STATUS</span><div class="status-head"><span class="pulse"></span><b>준비 완료</b></div><p>학생 정보를 입력하면<br />맞춤 분석을 바로 시작합니다.</p><button class="primary" id="startBtn">내 전략 진단하기 <span>→</span></button></div>
+        </section>
+
+        <section class="workspace" aria-label="학생 정보 입력">
+          <div class="form-panel">
+            <div class="panel-title"><span>INPUT</span><h2>학생 정보</h2><p>현재 상황을 정확히 입력할수록 전략의 해상도가 높아집니다.</p></div>
+            <form id="consultingForm">
+              <div class="field-grid basic-grid">
+                <label>입시 연도<select id="admissionYear"><option value="2027">2027학년도</option><option value="2028">2028학년도</option></select></label>
+                <label>현재 학년<select id="grade"><option value="1">고1</option><option value="2" selected>고2</option><option value="3">고3</option></select></label>
+                <label class="wide">희망 전공<input id="majorInput" value="컴퓨터공학" placeholder="예: 컴퓨터공학, 간호학" /></label>
+              </div>
+
+              <div class="input-block"><div class="input-title"><span>01</span><div><h3>내신 성적</h3><p>최근 학기 기준, 1.0–9.0 등급</p></div></div>
+                <div class="field-grid grade-grid">
+                  <label>국어<input id="korean" type="number" min="1" max="9" step="0.1" value="2.0" /></label>
+                  <label>수학<input id="math" type="number" min="1" max="9" step="0.1" value="1.5" /></label>
+                  <label>영어<input id="english" type="number" min="1" max="9" step="0.1" value="2.2" /></label>
+                  <label>사회<input id="social" type="number" min="1" max="9" step="0.1" value="2.3" /></label>
+                  <label>과학<input id="science" type="number" min="1" max="9" step="0.1" value="1.7" /></label>
+                </div>
+              </div>
+
+              <div class="input-block"><div class="input-title"><span>02</span><div><h3>모의고사 성적</h3><p>최근 전국연합/평가원 기준</p></div></div>
+                <div class="field-grid grade-grid">
+                  <label>국어<input id="mockKorean" type="number" min="1" max="9" step="0.1" value="2" /></label>
+                  <label>수학<input id="mockMath" type="number" min="1" max="9" step="0.1" value="1" /></label>
+                  <label>영어<input id="mockEnglish" type="number" min="1" max="9" step="0.1" value="2" /></label>
+                  <label>탐구<input id="mockInquiry" type="number" min="1" max="9" step="0.1" value="2" /></label>
+                </div>
+              </div>
+
+              <div class="input-block"><div class="input-title"><span>03</span><div><h3>학생부 · 세특 · 활동</h3><p>탐구·동아리·진로활동을 핵심 문장 위주로 입력하세요.</p></div></div>
+                <textarea id="recordText" rows="6">정보 과목에서 알고리즘 효율성에 관심을 갖고 정렬 알고리즘의 시간복잡도를 비교 분석하여 발표함. 교내 프로그래밍 동아리에서 급식 잔반 예측 프로그램을 제작했고, 수학 시간에는 확률 모델을 활용해 데이터의 오차를 탐구함.</textarea>
+              </div>
+              <label class="consent"><input type="checkbox" id="consent" checked /><span>학생부 텍스트를 전략 분석 목적으로 처리하는 데 동의합니다.</span></label>
+              <button type="submit" class="primary full">맞춤 전략 분석 시작 <span>→</span></button>
+            </form>
+          </div>
+
+          <div class="result-panel" id="resultPanel" aria-live="polite">
+            <div class="result-head"><div><span class="card-label">YOUR SNAPSHOT</span><h2 id="studentTitle">컴퓨터공학 지원 전략</h2></div><span class="year-badge" id="yearBadge">2027</span></div>
+            <p class="result-intro" id="resultIntro">입력된 성적과 학생부 기록을 바탕으로 산출한 현재 전략 진단입니다.</p>
+            <div class="scores" id="scores"></div>
+            <div class="strategy-box" id="strategy"><span class="card-label">RECOMMENDED PATH</span><div class="recommend"><div class="rank">01</div><div><h3 id="primaryStrategy">정시 중심 전략</h3><p id="strategyReason">모의고사 경쟁력이 내신보다 높습니다.</p></div></div><div class="recommend secondary"><div class="rank">02</div><div><h3 id="secondaryStrategy">학생부교과 병행</h3><p id="secondaryReason">수학·과학 교과 성취가 강점입니다.</p></div></div></div>
+            <div class="risk-list" id="record"><span class="card-label">CHECK POINT</span><ul id="riskList"></ul></div>
+            <div class="sample-list"><span class="card-label">TEST DATA MATCH</span><div id="recommendations"></div></div>
+          </div>
+        </section>
+
+        <section class="analysis-section" id="major">
+          <div class="section-heading"><div><p class="section-kicker">8-DIMENSION REVIEW</p><h2>컨설팅 리포트</h2></div><p>점수는 전략 우선순위를 위한 내부 진단값이며,<br />대학별 합격 가능성을 뜻하지 않습니다.</p></div>
+          <div class="report-grid">
+            <article><span>01</span><h3>학생 종합진단</h3><p id="reportOverall">성적과 기록의 균형을 진단합니다.</p></article>
+            <article><span>02</span><h3>내신 분석</h3><p id="reportGrades">핵심 교과의 경쟁력을 확인합니다.</p></article>
+            <article><span>03</span><h3>학생부 AI 분석</h3><p id="reportRecord">활동의 맥락과 탐구 깊이를 읽습니다.</p></article>
+            <article><span>04</span><h3>전공 적합도</h3><p id="reportMajor">희망 전공과 과목·활동 연결성을 봅니다.</p></article>
+            <article><span>05</span><h3>전형 적합도</h3><p id="reportTrack">교과·학종·정시·논술 경로를 비교합니다.</p></article>
+            <article><span>06</span><h3>대학 추천</h3><p>공식 모집요강 DB 연결 후 상향·적정·안정으로 분류합니다.</p></article>
+            <article><span>07</span><h3>합격 리스크</h3><p id="reportRisk">지원 전 확인해야 할 조건을 정리합니다.</p></article>
+            <article id="action"><span>08</span><h3>Action Plan</h3><p id="reportAction">다음 시험과 학생부 보완의 우선순위를 제시합니다.</p></article>
+          </div>
+        </section>
+
+        <footer>진로입시 AI · 전략 진단 MVP <span>대학별 지원 판단은 해당 연도 공식 모집요강·입시결과 확인이 필요합니다.</span></footer>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
