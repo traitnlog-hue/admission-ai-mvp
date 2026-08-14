@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .database import admissions_for_year, initialize, upsert_admissions
+from .academies import recommendations
 from .engine import analyze
 from .importer import parse_official_csv
 from .models import AnalysisResult, StudentProfile
@@ -18,7 +19,7 @@ FRONTEND_DIR = ROOT_DIR / "frontend"
 app = FastAPI(title="진로입시 AI API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:8080", "http://127.0.0.1:8080"],
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
@@ -40,6 +41,17 @@ def list_admissions(year: int) -> dict:
     if year not in (2027, 2028):
         return {"items": [], "notice": "지원하는 입시연도는 2027, 2028입니다."}
     return {"items": admissions_for_year(year), "notice": "verified 데이터만 실제 컨설팅 판단에 사용하세요."}
+
+
+@app.post("/api/academy-recommendations")
+async def academy_recommendations(request: Request) -> dict:
+    """공공데이터 CSV에서만 추천하며, 학생 정보는 저장하지 않는다."""
+    data = await request.json()
+    required = ("region", "grade", "subjects", "level")
+    if not all(data.get(key) for key in required) or not isinstance(data["subjects"], list):
+        raise HTTPException(status_code=422, detail="region, grade, subjects, level은 필수입니다.")
+    items = recommendations(data["region"], data["grade"], data["subjects"], data["level"])
+    return {"items": items, "notice": "무료 공공데이터 CSV 기반 결과입니다. 수강료·시간표·모집 상태는 상담 전 재확인하세요.", "source": "전국학원및교습소표준데이터"}
 
 
 @app.post("/api/admin/import-admissions")

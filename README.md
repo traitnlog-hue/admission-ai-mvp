@@ -39,6 +39,10 @@ pytest
 
 `backend/data/admissions.sqlite3`은 처음 실행할 때 가상 데이터를 자동 등록합니다. 실제 데이터를 넣을 때는 반드시 대학 공식 모집요강 또는 대학 입학처가 공시한 전년도 입시결과의 URL, 확인일, 전형별 변경사항을 함께 보관하고 `data_status`를 `verified`로 설정해야 합니다. 검증되지 않은 데이터는 실제 컨설팅 판단에 사용하지 않습니다.
 
+## 무료 학원 추천 데이터
+
+유료 API 없이 `backend/data/academies.free.csv`를 사용합니다. [전국학원및교습소표준데이터](https://www.data.go.kr/data/15096277/standard.do?recommendDataYn=Y)를 무료로 내려받아 필요한 서울 지역의 정상 운영 학원만 `academies.free.template.csv` 형식으로 정리해 저장하세요. `POST /api/academy-recommendations`는 지역·학년·과목·학습 수준을 기준으로 점수를 매기며, 학생 개인정보를 서버에 저장하지 않습니다.
+
 ### 공식 데이터 등록
 
 [CSV 템플릿](/Users/jangchanmi/Documents/ChatGPT/입시%20컨설팅%20분석%20프로그램/backend/data/admissions.template.csv)을 복사해 공식 출처·검증일을 모두 채웁니다. `ADMIN_API_TOKEN`을 설정한 뒤 `POST /api/admin/import-admissions`에 CSV 본문과 `X-Admin-Token` 헤더를 전송하면 검증된 전형으로 등록 또는 갱신됩니다. 이 관리자 API는 인증 없이 운영하면 안 됩니다.
