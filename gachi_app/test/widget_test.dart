@@ -4,13 +4,38 @@ import 'package:route27_mobile/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('intro shows the GACHI logo before authentication', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const GachiApp());
+
+    expect(find.byType(GachiBrandLogo), findsOneWidget);
+    expect(find.text('AI 진학 코치부터 맞춤 학원 찾기까지'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pump(const Duration(milliseconds: 320));
+    await tester.pumpAndSettle();
+    expect(find.byType(AuthGate), findsOneWidget);
+  });
+
+  testWidgets('intro automatically fades to authentication after 0.9 seconds', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const GachiApp());
+
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pump(const Duration(milliseconds: 320));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AuthGate), findsOneWidget);
+  });
+
   testWidgets('login gate supports guest entry', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const GachiApp());
+    await tester.pumpWidget(const GachiApp(showIntro: false));
     await tester.pumpAndSettle();
 
     expect(find.text('다시 만나서\n반가워요.'), findsOneWidget);
-    expect(find.textContaining('Google 로그인 준비 필요'), findsOneWidget);
+    expect(find.text('Google로 계속하기'), findsOneWidget);
     expect(find.text('이메일로 로그인'), findsOneWidget);
     await tester.ensureVisible(find.text('로그인 없이 둘러보기'));
     await tester.pumpAndSettle();
@@ -20,11 +45,24 @@ void main() {
     expect(find.text('나의 진학 준비'), findsOneWidget);
   });
 
+  testWidgets('상단 로고를 누르면 홈 탭으로 돌아간다', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: Shell()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('탐색'));
+    await tester.pumpAndSettle();
+    expect(find.text('오늘 무엇을\n도와드릴까요?'), findsOneWidget);
+
+    await tester.tapAt(const Offset(50, 44));
+    await tester.pumpAndSettle();
+    expect(find.text('나의 진학 준비'), findsOneWidget);
+  });
+
   testWidgets('email sign-up form validates required account fields', (
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const GachiApp());
+    await tester.pumpWidget(const GachiApp(showIntro: false));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('회원가입'));
@@ -36,6 +74,45 @@ void main() {
     await tester.tap(find.byKey(const Key('email-submit-button')));
     await tester.pump();
     expect(find.text('올바른 이메일 주소를 입력해 주세요.'), findsOneWidget);
+  });
+
+  testWidgets('로그인 화면은 아이디와 비밀번호 찾기 경로를 제공한다', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const GachiApp(showIntro: false));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('find-email-id-button')));
+    expect(find.byKey(const Key('reset-password-button')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('find-email-id-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('아이디 찾기'), findsNWidgets(2));
+    expect(find.textContaining('가입할 때 입력한 이메일 주소가 아이디'), findsOneWidget);
+  });
+
+  testWidgets('관리자 계정에는 운영자 대시보드 메뉴가 보인다', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Profile(
+            user: SessionUser(
+              name: '관리자',
+              email: 'admin@gachi.local',
+              authProvider: 'supabase',
+              isAdmin: true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('GACHI 운영자'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('운영자 대시보드'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('운영자 대시보드'), findsOneWidget);
   });
 
   testWidgets('real-name verification never asks for resident ID', (
@@ -83,6 +160,11 @@ void main() {
     await tester.tap(find.byKey(const Key('header-profile-button')));
     await tester.pumpAndSettle();
     expect(find.text('체험 학생'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('결제 및 컨설팅 내역'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('결제 및 컨설팅 내역'), findsOneWidget);
   });
 
@@ -92,11 +174,11 @@ void main() {
       'gachi.auth.name': '테스트 학생',
       'gachi.auth.email': 'student@example.com',
     });
-    await tester.pumpWidget(const GachiApp());
+    await tester.pumpWidget(const GachiApp(showIntro: false));
     await tester.pumpAndSettle();
 
     expect(find.text('나의 진학 준비'), findsOneWidget);
-    expect(find.text('30만 원 이하 학원,\n인증 후기와 함께 찾기'), findsOneWidget);
+    expect(find.text('학원, 가치 있게\n같이 찾기'), findsOneWidget);
     expect(find.text('학생 정보 등록'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('무료 진단'),
@@ -121,11 +203,12 @@ void main() {
     );
     expect(find.text('GACHI ADMISSION'), findsOneWidget);
 
-    await tester.tap(find.text('AI 챗봇'));
+    await tester.tap(find.bySemanticsLabel('GACHI AI 코치 열기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('GACHI AI'), findsOneWidget);
-    await tester.tap(find.text('무료 진단 알려줘'));
+    expect(find.byType(ChatAssistantPage), findsOneWidget);
+    await tester.enterText(find.byType(TextField), '무료 진단 알려줘');
+    await tester.tap(find.byTooltip('메시지 보내기'));
     await tester.pump();
     expect(find.textContaining('국어·영어·수학'), findsOneWidget);
   });
@@ -241,13 +324,13 @@ void main() {
 
     expect(find.byKey(const Key('receipt-ticket-animation')), findsOneWidget);
     expect(find.byKey(const Key('receipt-ticket-paper')), findsOneWidget);
-    expect(find.text('인증 회원 진단 티켓'), findsOneWidget);
+    expect(find.text('영수증 인증 진단 티켓'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 1600));
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('리얼 제보 피드가 검수 정책과 데모 신호를 보여준다', (WidgetTester tester) async {
+  testWidgets('동네 커뮤니티가 예시 게시글 상태를 보여준다', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       const MaterialApp(
@@ -264,9 +347,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('리얼 제보 · 핫딜'), findsOneWidget);
-    expect(find.textContaining('검수 전 학원명'), findsOneWidget);
-    expect(find.textContaining('MVP 데모'), findsWidgets);
+    expect(find.text('목동 학원 이야기'), findsOneWidget);
+    expect(find.textContaining('예시 게시글'), findsWidgets);
   });
 
   testWidgets('admission intake renders valid grade controls', (

@@ -889,6 +889,25 @@ class StrategyFreeResultPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ConsultantMatchingPage(
+                        strategyTitle: group.title,
+                        grade: result['grade'] as String,
+                      ),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: lime,
+                    side: const BorderSide(color: Color(0xffA9C4FC)),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  icon: const Icon(Icons.people_alt_outlined, size: 18),
+                  label: const Text('입시 컨설턴트 매칭 요청'),
+                ),
+                const SizedBox(height: 8),
                 FilledButton.icon(
                   onPressed: () => Navigator.push(
                     context,
@@ -906,6 +925,307 @@ class StrategyFreeResultPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class ConsultantProfile {
+  final String name;
+  final String role;
+  final String specialty;
+  final String experience;
+
+  const ConsultantProfile({
+    required this.name,
+    required this.role,
+    required this.specialty,
+    required this.experience,
+  });
+}
+
+const _consultantProfiles = <ConsultantProfile>[
+  ConsultantProfile(
+    name: '김하늘 컨설턴트',
+    role: '학생부·교과전형 전문',
+    specialty: '학생부 흐름과 교과 성적을 함께 보는 전략',
+    experience: '진학 상담 8년',
+  ),
+  ConsultantProfile(
+    name: '박도윤 컨설턴트',
+    role: '수능·정시전형 전문',
+    specialty: '지원 조합과 수능최저 대응 전략',
+    experience: '진학 상담 11년',
+  ),
+  ConsultantProfile(
+    name: '이서윤 컨설턴트',
+    role: '계열·전공 탐색 전문',
+    specialty: '희망 전공 기반의 선택과목·활동 설계',
+    experience: '진학 상담 6년',
+  ),
+];
+
+class ConsultantMatchingPage extends StatefulWidget {
+  final String strategyTitle;
+  final String grade;
+
+  const ConsultantMatchingPage({
+    super.key,
+    required this.strategyTitle,
+    required this.grade,
+  });
+
+  @override
+  State<ConsultantMatchingPage> createState() => _ConsultantMatchingPageState();
+}
+
+class _ConsultantMatchingPageState extends State<ConsultantMatchingPage> {
+  int selectedConsultant = 0;
+  String method = '영상 상담';
+  String time = '평일 저녁';
+  bool requested = false;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: mist,
+    appBar: AppBar(backgroundColor: mist, title: const Text('컨설턴트 매칭')),
+    body: requested
+        ? _MatchRequestComplete(
+            consultant: _consultantProfiles[selectedConsultant],
+            method: method,
+            time: time,
+          )
+        : ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+            children: [
+              const Text(
+                '진단 결과를 바탕으로\n맞는 컨설턴트를 찾아드릴게요.',
+                style: TextStyle(
+                  color: text,
+                  fontSize: 24,
+                  height: 1.22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                '${widget.grade} · ${widget.strategyTitle} 목표 기준',
+                style: const TextStyle(color: mute, fontSize: 12),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                '추천 컨설턴트',
+                style: TextStyle(
+                  color: text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 9),
+              ..._consultantProfiles.asMap().entries.map(
+                (entry) => _ConsultantCandidateCard(
+                  consultant: entry.value,
+                  selected: selectedConsultant == entry.key,
+                  onTap: () => setState(() => selectedConsultant = entry.key),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '상담 방식',
+                style: TextStyle(
+                  color: text,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: ['영상 상담', '전화 상담', '대면 상담']
+                    .map(
+                      (value) => ChoiceChip(
+                        label: Text(value),
+                        selected: method == value,
+                        onSelected: (_) => setState(() => method = value),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '희망 시간대',
+                style: TextStyle(
+                  color: text,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: ['평일 낮', '평일 저녁', '주말']
+                    .map(
+                      (value) => ChoiceChip(
+                        label: Text(value),
+                        selected: time == value,
+                        onSelected: (_) => setState(() => time = value),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 22),
+              FilledButton.icon(
+                onPressed: () => setState(() => requested = true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: lime,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                icon: const Icon(Icons.send_outlined, size: 18),
+                label: const Text('컨설턴트 매칭 요청하기'),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'MVP 데모에서는 실제 컨설턴트에게 요청이 전송되지 않습니다.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: mute, fontSize: 10),
+              ),
+            ],
+          ),
+  );
+}
+
+class _ConsultantCandidateCard extends StatelessWidget {
+  final ConsultantProfile consultant;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ConsultantCandidateCard({
+    required this.consultant,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: selected ? lavender : surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: selected ? lime : const Color(0xffE0E6F0)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: selected ? lime : const Color(0xffEDF2FF),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.person_outline_rounded,
+                color: selected ? Colors.white : lime,
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    consultant.name,
+                    style: const TextStyle(
+                      color: text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${consultant.role} · ${consultant.experience}',
+                    style: const TextStyle(color: mute, fontSize: 10),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    consultant.specialty,
+                    style: const TextStyle(color: mute, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              selected
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+              color: selected ? lime : const Color(0xffB7C0D0),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _MatchRequestComplete extends StatelessWidget {
+  final ConsultantProfile consultant;
+  final String method;
+  final String time;
+
+  const _MatchRequestComplete({
+    required this.consultant,
+    required this.method,
+    required this.time,
+  });
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: const BoxDecoration(
+              color: lavender,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_rounded, color: lime, size: 36),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            '매칭 요청을 저장했어요.',
+            style: TextStyle(
+              color: text,
+              fontSize: 21,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${consultant.name} · $method · $time',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: mute, fontSize: 12),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            '현재는 MVP 데모로, 요청 정보가 실제 컨설턴트에게 전달되지는 않습니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: mute, fontSize: 11, height: 1.5),
+          ),
+          const SizedBox(height: 22),
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('진단 결과로 돌아가기'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _ResultMetricGrid extends StatelessWidget {

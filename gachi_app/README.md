@@ -20,6 +20,25 @@ flutter run -d chrome \
   --dart-define=GOOGLE_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
 ```
 
+### Supabase 이메일 로그인
+
+MVP 기본 프로젝트에는 Supabase Auth가 연결되어 있습니다. 별도 Supabase
+프로젝트로 배포할 때만 프로젝트 URL과 **Publishable key**를 Dart define으로
+덮어씁니다. 이 키는 클라이언트 노출용 키이며, `service_role`·`sb_secret` 키를
+모바일 또는 웹 앱에 넣으면 안 됩니다.
+
+```bash
+flutter run -d chrome \
+  --web-port 7357 \
+  --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_KEY
+```
+
+Supabase Dashboard에서 Email provider를 활성화하고, `http://127.0.0.1:7357`와
+운영 도메인을 **Authentication > URL Configuration > Redirect URLs**에 등록하세요.
+이메일 확인이 켜진 프로젝트는 회원가입 뒤 확인 메일을 받은 사용자가 로그인할 수
+있습니다. 확인 링크로 앱에 돌아오면 Supabase 세션을 감지해 자동 로그인합니다.
+
 웹 Google 로그인은 커스텀 버튼이 아니라 Google Identity Services 공식 버튼을
 렌더링합니다. Google Cloud의 승인된 JavaScript 원본에 로컬 및 운영 도메인이
 등록되어 있어야 합니다. 이메일 로그인은 루트 FastAPI 서버의 계정 API를

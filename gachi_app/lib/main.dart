@@ -8,7 +8,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'google_login_button.dart';
 import 'insight_data.dart';
@@ -23,6 +25,7 @@ part 'admission_strategy_experience.dart';
 part 'explore_experience.dart';
 part 'level_test_experience.dart';
 part 'local_value_experience.dart';
+part 'admin_experience.dart';
 
 const navy = Color(0xff101114),
     surface = Color(0xffFFFFFF),
@@ -32,10 +35,17 @@ const navy = Color(0xff101114),
     text = Color(0xff14161B),
     mute = Color(0xff778091),
     coral = Color(0xffFF5A1F);
-void main() => runApp(const GachiApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) usePathUrlStrategy();
+  await SupabaseAuthService.initialize();
+  runApp(const GachiApp());
+}
 
 class GachiApp extends StatelessWidget {
-  const GachiApp({super.key});
+  final bool showIntro;
+
+  const GachiApp({super.key, this.showIntro = true});
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
@@ -76,8 +86,121 @@ class GachiApp extends StatelessWidget {
         brightness: Brightness.light,
       ),
     ),
-    home: const AuthGate(),
+    home: showIntro ? const IntroPage() : const AuthGate(),
   );
+}
+
+class IntroPage extends StatefulWidget {
+  const IntroPage({super.key});
+
+  @override
+  State<IntroPage> createState() => _IntroPageState();
+}
+
+class _IntroPageState extends State<IntroPage> {
+  Timer? _dismissTimer;
+  bool _isLeaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _dismissTimer = Timer(const Duration(milliseconds: 900), _leave);
+  }
+
+  void _leave() {
+    if (!mounted || _isLeaving) return;
+    setState(() => _isLeaving = true);
+    Future<void>.delayed(const Duration(milliseconds: 320), () {
+      if (!mounted) return;
+      Navigator.of(context)
+          .pushReplacement(MaterialPageRoute(builder: (_) => const AuthGate()));
+    });
+  }
+
+  @override
+  void dispose() {
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xff101C36),
+    body: AnimatedOpacity(
+      opacity: _isLeaving ? 0 : 1,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOut,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 32, 28, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(flex: 2),
+              Center(
+                child: const GachiBrandLogo(
+                  width: 230,
+                  color: Color(0xffEAF8FF),
+                ),
+              ),
+              const Spacer(flex: 3),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xff1D2C4B),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: Color(0xffA8EF41)),
+                    SizedBox(width: 11),
+                    Expanded(
+                      child: Text(
+                        'AI 진학 코치부터 맞춤 학원 찾기까지',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class GachiBrandLogo extends StatelessWidget {
+  final double width;
+  final Color? color;
+
+  const GachiBrandLogo({super.key, required this.width, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final logo = Image.asset(
+      'assets/branding/gachi_wordmark.png',
+      width: width,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+
+    return Semantics(
+      label: 'GACHI, 같이 배우고 가치를 키우다',
+      image: true,
+      child: color == null
+          ? logo
+          : ColorFiltered(
+              colorFilter: ColorFilter.mode(color!, BlendMode.srcIn),
+              child: logo,
+            ),
+    );
+  }
 }
 
 class Shell extends StatefulWidget {
@@ -95,29 +218,57 @@ class _ShellState extends State<Shell> {
     Home(
       user: widget.user,
       onRequireLogin: widget.onLogout,
+      onOpenHome: () => setState(() => index = 0),
       onOpenProfile: () => setState(() => index = 4),
     ),
     Explore(
       user: widget.user,
       onRequireLogin: widget.onLogout,
+      onOpenHome: () => setState(() => index = 0),
       onOpenCoach: () => setState(() => index = 3),
     ),
     Community(user: widget.user, onRequireLogin: widget.onLogout),
-    Coach(user: widget.user, onRequireLogin: widget.onLogout),
-    Profile(user: widget.user, onLogout: widget.onLogout),
+    Coach(
+      user: widget.user,
+      onRequireLogin: widget.onLogout,
+      onOpenHome: () => setState(() => index = 0),
+    ),
+    Profile(
+      user: widget.user,
+      onLogout: widget.onLogout,
+      onOpenHome: () => setState(() => index = 0),
+    ),
   ];
   @override
   Widget build(BuildContext c) => Scaffold(
     body: SafeArea(child: pages[index]),
-    floatingActionButton: FloatingActionButton.extended(
-      onPressed: () => Navigator.push(
-        c,
-        MaterialPageRoute(builder: (_) => const ChatAssistantPage()),
+    floatingActionButton: Semantics(
+      button: true,
+      label: 'GACHI AI 코치 열기',
+      child: SizedBox(
+        width: 56,
+        height: 56,
+        child: Material(
+          color: const Color(0xff2162DD),
+          elevation: 8,
+          shadowColor: const Color(0x550A327B),
+          borderRadius: BorderRadius.circular(17),
+          child: InkWell(
+            onTap: () => Navigator.push(
+              c,
+              MaterialPageRoute(builder: (_) => const ChatAssistantPage()),
+            ),
+            borderRadius: BorderRadius.circular(17),
+            child: const Center(
+              child: Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 27,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
       ),
-      backgroundColor: lime,
-      foregroundColor: Colors.white,
-      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 19),
-      label: const Text('AI 챗봇'),
     ),
     bottomNavigationBar: SafeArea(
       top: false,
@@ -128,54 +279,92 @@ class _ShellState extends State<Shell> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 20)],
         ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            iconTheme: WidgetStateProperty.resolveWith(
-              (states) => IconThemeData(
-                color: states.contains(WidgetState.selected)
-                    ? Colors.white
-                    : const Color(0xffB9C3D5),
+        child: Row(
+          children: [
+            _BottomNavButton(
+              icon: Icons.grid_view_rounded,
+              label: '홈',
+              selected: index == 0,
+              onTap: () => setState(() => index = 0),
+            ),
+            _BottomNavButton(
+              icon: Icons.explore_outlined,
+              label: '탐색',
+              selected: index == 1,
+              onTap: () => setState(() => index = 1),
+            ),
+            _BottomNavButton(
+              icon: Icons.forum_outlined,
+              label: '커뮤니티',
+              selected: index == 2,
+              onTap: () => setState(() => index = 2),
+            ),
+            _BottomNavButton(
+              icon: Icons.auto_awesome_outlined,
+              label: '코치',
+              selected: index == 3,
+              onTap: () => setState(() => index = 3),
+            ),
+            _BottomNavButton(
+              icon: Icons.person_outline,
+              label: 'MY',
+              selected: index == 4,
+              onTap: () => setState(() => index = 4),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _BottomNavButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _BottomNavButton({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: selected ? lime : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                icon,
                 size: 25,
+                color: selected ? Colors.white : const Color(0xffB9C3D5),
               ),
             ),
-            labelTextStyle: WidgetStatePropertyAll(
-              const TextStyle(
-                color: Colors.white,
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : const Color(0xffB9C3D5),
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          child: NavigationBar(
-            height: 74,
-            backgroundColor: Colors.transparent,
-            indicatorColor: lime,
-            onDestinationSelected: (i) => setState(() => index = i),
-            selectedIndex: index,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.grid_view_rounded),
-                label: '홈',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.explore_outlined),
-                label: '탐색',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.forum_outlined),
-                label: '커뮤니티',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.auto_awesome_outlined),
-                label: '코치',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                label: 'MY',
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     ),
@@ -228,12 +417,14 @@ class LegacyHome extends StatelessWidget {
 
 class _Top extends StatelessWidget {
   final String initial;
+  final VoidCallback? onHome;
   final VoidCallback? onNotifications;
   final VoidCallback? onProfile;
   final bool hasUnreadNotifications;
 
   const _Top({
     this.initial = '지',
+    this.onHome,
     this.onNotifications,
     this.onProfile,
     this.hasUnreadNotifications = false,
@@ -242,8 +433,7 @@ class _Top extends StatelessWidget {
   @override
   Widget build(BuildContext c) => Row(
     children: [
-      const _Logo(),
-      const Spacer(),
+      Expanded(child: _Logo(responsive: true, onTap: onHome)),
       Stack(
         clipBehavior: Clip.none,
         children: [
@@ -301,35 +491,60 @@ class _Top extends StatelessWidget {
 }
 
 class _Logo extends StatelessWidget {
-  const _Logo();
+  final bool responsive;
+  final VoidCallback? onTap;
+
+  const _Logo({this.responsive = false, this.onTap});
+
   @override
-  Widget build(BuildContext c) => Row(
-    children: [
-      Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(color: lime, shape: BoxShape.circle),
-        child: Center(
-          child: Text(
-            'G',
-            style: TextStyle(
-              color: navy,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
+  Widget build(BuildContext c) => LayoutBuilder(
+    builder: (context, constraints) {
+      const preferredWidth = 285.0;
+      final logoWidth = responsive
+          ? (constraints.maxWidth < preferredWidth
+                ? constraints.maxWidth
+                : preferredWidth)
+          : preferredWidth;
+      final logoHeight = logoWidth / 6;
+
+      return Semantics(
+        label: 'GACHI, 같이 배우고 더 큰 가치를 만듭니다',
+        button: onTap != null,
+        image: true,
+        // 원본 PNG의 투명 여백을 상쇄해 실제 워드마크 기준으로 20px을 맞춘다.
+        child: GestureDetector(
+          key: const Key('gachi-home-logo'),
+          onTap: onTap,
+          child: Transform.translate(
+            offset: Offset(-logoWidth * 0.125, 0),
+            child: SizedBox(
+              width: logoWidth,
+              height: logoHeight,
+              child: Stack(
+                children: [
+                  Image.asset(
+                    'assets/branding/gachi_horizontal_logo.png',
+                    width: logoWidth,
+                    height: logoHeight,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                  ),
+                  Positioned(
+                    left: logoWidth * 0.505,
+                    top: logoHeight * 0.31,
+                    child: Container(
+                      width: logoWidth * 0.012,
+                      height: logoHeight * 0.39,
+                      color: mist,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-      SizedBox(width: 9),
-      Text(
-        'GACHI',
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.8,
-          color: text,
-        ),
-      ),
-    ],
+      );
+    },
   );
 }
 
@@ -865,12 +1080,15 @@ class _StudentProfileCard extends StatelessWidget {
         onTap: onEdit,
         borderRadius: radius,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          padding: EdgeInsets.symmetric(
+            horizontal: embedded ? 18 : 14,
+            vertical: embedded ? 16 : 13,
+          ),
           child: Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: embedded ? 48 : 38,
+                height: embedded ? 48 : 38,
                 decoration: BoxDecoration(
                   color: lavender,
                   borderRadius: BorderRadius.circular(12),
@@ -880,7 +1098,7 @@ class _StudentProfileCard extends StatelessWidget {
                       ? Icons.person_add_alt_1_outlined
                       : Icons.person_outline_rounded,
                   color: lime,
-                  size: 20,
+                  size: embedded ? 25 : 20,
                 ),
               ),
               const SizedBox(width: 11),
@@ -890,9 +1108,9 @@ class _StudentProfileCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: text,
-                        fontSize: 13,
+                        fontSize: embedded ? 16 : 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -901,7 +1119,10 @@ class _StudentProfileCard extends StatelessWidget {
                       body,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: mute, fontSize: 10),
+                      style: TextStyle(
+                        color: mute,
+                        fontSize: embedded ? 12 : 10,
+                      ),
                     ),
                   ],
                 ),
@@ -909,14 +1130,18 @@ class _StudentProfileCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 p == null ? '등록' : '수정',
-                style: const TextStyle(
+                style: TextStyle(
                   color: lime,
-                  fontSize: 10,
+                  fontSize: embedded ? 12 : 10,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: 2),
-              const Icon(Icons.chevron_right_rounded, color: mute, size: 18),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: mute,
+                size: embedded ? 22 : 18,
+              ),
             ],
           ),
         ),
@@ -1413,17 +1638,10 @@ class _Quick extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: dark ? Colors.transparent : lavender,
-              border: Border.all(
-                color: dark ? const Color(0xff4B5569) : const Color(0xffD7E3FF),
-              ),
-            ),
-            child: Icon(icon, color: dark ? Colors.white : lime, size: 18),
+            child: Icon(icon, color: dark ? Colors.white : lime, size: 24),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1693,13 +1911,14 @@ class _Forum extends StatelessWidget {
 class Coach extends StatelessWidget {
   final SessionUser? user;
   final VoidCallback? onRequireLogin;
+  final VoidCallback? onOpenHome;
 
-  const Coach({super.key, this.user, this.onRequireLogin});
+  const Coach({super.key, this.user, this.onRequireLogin, this.onOpenHome});
   @override
   Widget build(BuildContext c) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
     children: [
-      const _Logo(),
+      _Logo(onTap: onOpenHome),
       const SizedBox(height: 26),
       Row(
         children: [
@@ -2334,6 +2553,25 @@ class CoachAdmissionResult extends StatelessWidget {
                   style: TextStyle(color: mute, fontSize: 11, height: 1.5),
                 ),
                 const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    c,
+                    MaterialPageRoute(
+                      builder: (_) => ConsultantMatchingPage(
+                        strategyTitle: data['major'] as String,
+                        grade: data['grade'] as String? ?? '고등학생',
+                      ),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: lime,
+                    side: const BorderSide(color: Color(0xffA9C4FC)),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  icon: const Icon(Icons.people_alt_outlined, size: 18),
+                  label: const Text('입시 컨설턴트 매칭 요청'),
+                ),
+                const SizedBox(height: 8),
                 FilledButton.icon(
                   onPressed: () => Navigator.push(
                     c,
@@ -2452,8 +2690,9 @@ class _ScoreCard extends StatelessWidget {
 class Profile extends StatelessWidget {
   final SessionUser? user;
   final VoidCallback? onLogout;
+  final VoidCallback? onOpenHome;
 
-  const Profile({super.key, this.user, this.onLogout});
+  const Profile({super.key, this.user, this.onLogout, this.onOpenHome});
   @override
   Widget build(BuildContext c) {
     final displayName = user?.name ?? 'GACHI 학생';
@@ -2463,7 +2702,7 @@ class Profile extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
       children: [
-        const _Logo(),
+        _Logo(onTap: onOpenHome),
         const SizedBox(height: 30),
         Container(
           padding: const EdgeInsets.all(20),
@@ -2509,6 +2748,23 @@ class Profile extends StatelessWidget {
                         ),
                         child: const Text(
                           'Google 계정 연결됨',
+                          style: TextStyle(color: lime, fontSize: 9),
+                        ),
+                      ),
+                    ],
+                    if (user?.isAdmin == true) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffE8F0FF),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'GACHI 운영자',
                           style: TextStyle(color: lime, fontSize: 9),
                         ),
                       ),
@@ -2600,6 +2856,15 @@ class Profile extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const GachiSettingsPage()),
           ),
         ),
+        if (user?.isAdmin == true)
+          _ProfileItem(
+            Icons.admin_panel_settings_outlined,
+            '운영자 대시보드',
+            onTap: () => Navigator.push(
+              c,
+              MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+            ),
+          ),
         if (onLogout != null) ...[
           const SizedBox(height: 8),
           TextButton.icon(

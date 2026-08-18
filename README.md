@@ -18,7 +18,21 @@ Flutter 앱은 기본적으로 `http://127.0.0.1:8000`의 API를 사용합니다
 
 ## 로그인과 실명인증 설정
 
-- 이메일 회원가입·로그인은 FastAPI의 `/api/auth/*` 계정/세션 API를 사용합니다.
+- Supabase 이메일 로그인은 MVP 기본 프로젝트에 연결되어 바로 활성화됩니다.
+  별도 Supabase 프로젝트로 배포할 때만 `SUPABASE_URL`과
+  `SUPABASE_PUBLISHABLE_KEY`를 실행 옵션으로 덮어쓰세요. Dashboard의
+  **Connect**에서 URL과 **Publishable key**를 복사하며, `service_role` 또는
+  `sb_secret` 키는 앱에 절대 넣으면 안 됩니다.
+  ```bash
+  flutter run -d chrome \
+    --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
+    --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_KEY
+  ```
+  Supabase Dashboard의 **Authentication > Providers**에서 Email을 활성화하고,
+  이메일 확인을 켠 경우 가입 뒤 확인 메일을 받은 사용자가 다시 로그인하도록
+  안내됩니다. 웹 개발 주소 `http://127.0.0.1:7357`와 운영 도메인은
+  **Authentication > URL Configuration**의 Redirect URLs에 등록하세요.
+- 기존 FastAPI `/api/auth/*` 계정/세션 API는 로컬 개발 호환용으로 유지됩니다.
   운영 환경은 HTTPS를 적용하고 `GACHI_AUTH_PEPPER`를 서버 비밀값으로 설정하세요.
 - 웹 Google 로그인은 Google Cloud에서 Web OAuth 클라이언트를 만든 뒤 실행 시
   `--dart-define=GOOGLE_CLIENT_ID=...apps.googleusercontent.com`을 전달해야 합니다.

@@ -3,9 +3,16 @@ part of 'main.dart';
 class Home extends StatefulWidget {
   final SessionUser? user;
   final VoidCallback? onRequireLogin;
+  final VoidCallback? onOpenHome;
   final VoidCallback? onOpenProfile;
 
-  const Home({super.key, this.user, this.onRequireLogin, this.onOpenProfile});
+  const Home({
+    super.key,
+    this.user,
+    this.onRequireLogin,
+    this.onOpenHome,
+    this.onOpenProfile,
+  });
 
   @override
   State<Home> createState() => _HomeState();
@@ -135,6 +142,7 @@ class _HomeState extends State<Home> {
       children: [
         _Top(
           initial: _profileInitial(widget.user),
+          onHome: widget.onOpenHome,
           onNotifications: _openNotifications,
           onProfile: widget.onOpenProfile,
           hasUnreadNotifications: hasUnreadNotifications,
@@ -159,6 +167,8 @@ class _HomeState extends State<Home> {
         ),
         const SizedBox(height: 12),
         ValueAcademyHero(
+          profile: academyProfile,
+          onEditProfile: _editProfile,
           onOpenMap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const ValueAcademyMapPage()),
@@ -169,25 +179,18 @@ class _HomeState extends State<Home> {
         Container(
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xffE2E6EE)),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xffD9E4F5)),
           ),
           child: Column(
             children: [
-              _StudentProfileCard(
-                profile: academyProfile,
-                onEdit: _editProfile,
-                embedded: true,
-              ),
-              const Divider(height: 1, indent: 14, endIndent: 14),
               TrustWalletCard(
                 user: widget.user,
                 onRequireLogin: widget.onRequireLogin,
                 embedded: true,
               ),
-              const Divider(height: 1, indent: 14, endIndent: 14),
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 12, 10, 14),
+                padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
                 child: Row(
                   children: [
                     _Quick(
@@ -308,9 +311,76 @@ class _HomeState extends State<Home> {
               ),
             ),
           ),
+        const SizedBox(height: 22),
+        const _HomeAdSlot(),
       ],
     );
   }
+}
+
+class _HomeAdSlot extends StatelessWidget {
+  const _HomeAdSlot();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '광고. 고등 영어 루틴 7일 무료 체험',
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xff183A72), Color(0xff2765BC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .16),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(Icons.auto_stories_rounded, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AD · 스터디메이트',
+                  style: TextStyle(
+                    color: Color(0xffBFD6FF),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: .4,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '고등 영어 루틴, 7일 무료 체험',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  '매일 15분 · 오늘의 단어와 오답 복습',
+                  style: TextStyle(color: Color(0xffD9E6FF), fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: Colors.white70),
+        ],
+      ),
+    ),
+  );
 }
 
 String _profileInitial(SessionUser? user) {

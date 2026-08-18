@@ -2,12 +2,14 @@ part of 'main.dart';
 
 class Explore extends StatefulWidget {
   final VoidCallback onOpenCoach;
+  final VoidCallback? onOpenHome;
   final SessionUser? user;
   final VoidCallback? onRequireLogin;
 
   const Explore({
     super.key,
     required this.onOpenCoach,
+    this.onOpenHome,
     this.user,
     this.onRequireLogin,
   });
@@ -111,7 +113,7 @@ class _ExploreState extends State<Explore> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 116),
       children: [
-        const _Logo(),
+        _Logo(onTap: widget.onOpenHome),
         const SizedBox(height: 24),
         const Text(
           '오늘 무엇을\n도와드릴까요?',
@@ -603,10 +605,7 @@ class _ChatAssistantPageState extends State<ChatAssistantPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<_ChatMessage> messages = const [
-    _ChatMessage(
-      text: '안녕하세요! 진단, 목표 플랜, 대입 전략, 고교 선택 중 무엇을 도와드릴까요?',
-      fromUser: false,
-    ),
+    _ChatMessage(text: '안녕하세요. 학년과 가장 고민되는 과목 또는 목표를 알려주세요.', fromUser: false),
   ].toList();
 
   @override
@@ -661,53 +660,15 @@ class _ChatAssistantPageState extends State<ChatAssistantPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: mist,
+    backgroundColor: const Color(0xffF5FAFF),
     appBar: AppBar(
-      backgroundColor: surface,
+      backgroundColor: const Color(0xffF5FAFF),
       foregroundColor: text,
-      title: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('GACHI AI', style: TextStyle(fontSize: 16)),
-          Text('학습·진학 도우미', style: TextStyle(color: mute, fontSize: 10)),
-        ],
-      ),
     ),
     body: SafeArea(
       top: false,
       child: Column(
         children: [
-          Container(
-            width: double.infinity,
-            color: lavender,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-            child: const Text(
-              '현재 데모 챗봇은 앱 기능과 학습 방향을 안내하며, 입력 내용은 서버로 전송하지 않습니다.',
-              style: TextStyle(color: Color(0xff40516F), fontSize: 10),
-            ),
-          ),
-          SizedBox(
-            height: 50,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              children: [
-                for (final suggestion in const [
-                  '무료 진단 알려줘',
-                  '목표 플랜 만들기',
-                  '대입 전략 진단',
-                  '고교 선택 도와줘',
-                ])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 7),
-                    child: ActionChip(
-                      label: Text(suggestion),
-                      onPressed: () => _send(suggestion),
-                    ),
-                  ),
-              ],
-            ),
-          ),
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -783,6 +744,9 @@ class _ChatBubble extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
         color: message.fromUser ? lime : surface,
+        border: message.fromUser
+            ? null
+            : Border.all(color: const Color(0xffDCEBFA)),
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(17),
           topRight: const Radius.circular(17),

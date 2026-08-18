@@ -621,9 +621,9 @@ class _TrustWalletCardState extends State<TrustWalletCard> {
     final user = widget.user;
     if (user == null || user.isGuest) {
       return _WalletShell(
-        title: '인증 회원 진단 티켓',
-        body: '회원가입 후 영수증 1건으로 무료 진단 1회',
-        trailing: '안내 보기',
+        title: '영수증 인증 진단 티켓',
+        body: '영수증 1건 인증하면 무료 진단 1회',
+        trailing: '안내',
         embedded: widget.embedded,
         onTap: _open,
       );
@@ -635,8 +635,8 @@ class _TrustWalletCardState extends State<TrustWalletCard> {
             snapshot.data ??
             const TrustStatus(tickets: 0, points: 0, receiptCount: 0);
         return _WalletShell(
-          title: '진단 티켓 ${value.tickets}매 · ${value.points}P',
-          body: '영수증 인증 ${value.receiptCount}건 · 티켓은 대입전략·고교탐색에 사용',
+          title: '진단 티켓 ${value.tickets}매',
+          body: '보유 ${value.points}P · 영수증 인증 ${value.receiptCount}건',
           trailing: '영수증 인증',
           embedded: widget.embedded,
           onTap: _open,
@@ -714,22 +714,26 @@ class _WalletShellState extends State<_WalletShell>
     excludeSemantics: true,
     label: '${widget.title}. ${widget.body}. ${widget.trailing}',
     child: Material(
-      color: widget.embedded ? Colors.transparent : const Color(0xffFFF7DF),
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            widget.embedded ? 10 : 12,
-            widget.embedded ? 7 : 9,
-            widget.embedded ? 12 : 14,
-            widget.embedded ? 7 : 9,
+        child: Container(
+          margin: EdgeInsets.symmetric(
+            horizontal: widget.embedded ? 12 : 0,
+            vertical: widget.embedded ? 12 : 0,
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 12, 13, 12),
+          decoration: BoxDecoration(
+            color: lavender,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xffD6E3FB)),
           ),
           child: Row(
             children: [
               _ReceiptTicketAnimation(reveal: _receiptReveal),
-              const SizedBox(width: 11),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,32 +742,38 @@ class _WalletShellState extends State<_WalletShell>
                       widget.title,
                       style: const TextStyle(
                         color: text,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 1),
+                    const SizedBox(height: 3),
                     Text(
                       widget.body,
                       style: const TextStyle(
                         color: mute,
-                        fontSize: 9,
+                        fontSize: 10,
                         height: 1.4,
                       ),
                     ),
                   ],
                 ),
               ),
-              AnimatedBuilder(
-                animation: _receiptReveal,
-                builder: (context, child) => Transform.translate(
-                  offset: Offset(2 * _receiptReveal.value, 0),
-                  child: child,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                decoration: BoxDecoration(
+                  color: widget.embedded
+                      ? Colors.white
+                      : const Color(0xffFFF7DF),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xffD1DDF3)),
                 ),
-                child: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: mute,
-                  size: 19,
+                child: Text(
+                  widget.trailing,
+                  style: const TextStyle(
+                    color: lime,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -783,8 +793,8 @@ class _ReceiptTicketAnimation extends StatelessWidget {
   Widget build(BuildContext context) => ExcludeSemantics(
     child: SizedBox(
       key: const Key('receipt-ticket-animation'),
-      width: 58,
-      height: 62,
+      width: 60,
+      height: 60,
       child: AnimatedBuilder(
         animation: reveal,
         builder: (context, _) {
@@ -794,111 +804,64 @@ class _ReceiptTicketAnimation extends StatelessWidget {
             alignment: Alignment.topCenter,
             children: [
               Positioned(
-                top: 22,
-                child: ClipRect(
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    heightFactor: 0.20 + (0.80 * progress),
-                    child: ClipPath(
-                      clipper: const _ReceiptEdgeClipper(),
-                      child: Container(
-                        key: const Key('receipt-ticket-paper'),
-                        width: 43,
-                        height: 40,
-                        padding: const EdgeInsets.fromLTRB(5, 8, 5, 4),
-                        color: const Color(0xffFFFDF5),
-                        child: Opacity(
-                          opacity: progress,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Container(
-                                height: 2.5,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xffE7C77E),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              const Column(
-                                children: [
-                                  Text(
-                                    '+1',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xff8F5700),
-                                      fontSize: 9,
-                                      height: 0.9,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    'TICKET',
-                                    maxLines: 1,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xffA66B00),
-                                      fontSize: 5.5,
-                                      height: 1,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.25,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 4 - (progress * 3),
+                top: 2 - (progress * 2),
                 child: Transform.scale(
-                  scale: 0.90 + (0.10 * progress),
-                  child: Container(
-                    width: 53,
-                    height: 31,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xffFFE49E), Color(0xffEFB640)],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xffD99C20)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color.fromRGBO(
-                            190,
-                            124,
-                            4,
-                            0.16 + (0.22 * progress),
-                          ),
-                          blurRadius: 9 + (7 * progress),
-                          spreadRadius: 1 + progress,
-                          offset: const Offset(0, 4),
+                  scale: 0.92 + (0.08 * progress),
+                  child: _ReceiptTicketPulse(
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xff4384F8), Color(0xff1A57D1)],
                         ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.local_print_shop_outlined,
-                      color: Color(0xff774800),
-                      size: 19,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xff7CB0FF)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color.fromRGBO(
+                              19,
+                              71,
+                              158,
+                              0.18 + (0.16 * progress),
+                            ),
+                            blurRadius: 10 + (5 * progress),
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                   ),
                 ),
               ),
               Positioned(
-                top: 29,
+                bottom: 0,
                 child: Container(
-                  width: 37,
-                  height: 3,
+                  key: const Key('receipt-ticket-paper'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
-                    color: const Color(0xff9E6500),
-                    borderRadius: BorderRadius.circular(2),
+                    color: const Color(0xffFFF4C4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xffE2B53D)),
+                  ),
+                  child: const Text(
+                    '+1 TICKET',
+                    style: TextStyle(
+                      color: Color(0xff755000),
+                      fontSize: 7,
+                      height: 1,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -907,6 +870,90 @@ class _ReceiptTicketAnimation extends StatelessWidget {
         },
       ),
     ),
+  );
+}
+
+class _ReceiptTicketPulse extends StatefulWidget {
+  final Widget child;
+
+  const _ReceiptTicketPulse({required this.child});
+
+  @override
+  State<_ReceiptTicketPulse> createState() => _ReceiptTicketPulseState();
+}
+
+class _ReceiptTicketPulseState extends State<_ReceiptTicketPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool? _animationsDisabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final disabled = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (_animationsDisabled == disabled) return;
+    _animationsDisabled = disabled;
+    if (disabled) {
+      _controller
+        ..stop()
+        ..value = 0;
+    } else {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _controller,
+    builder: (context, _) {
+      final value = Curves.easeInOut.transform(_controller.value);
+      return Transform.translate(
+        offset: Offset(0, -2 * value),
+        child: Transform.scale(
+          scale: 1 + (0.025 * value),
+          child: SizedBox(
+            width: 52,
+            height: 52,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                widget.child,
+                Positioned(
+                  top: -7,
+                  right: -7,
+                  child: Opacity(
+                    opacity: 0.3 + (0.7 * value),
+                    child: Transform.scale(
+                      scale: 0.7 + (0.3 * value),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Color(0xff8EB6FF),
+                        size: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
   );
 }
 
@@ -1015,57 +1062,92 @@ const valueAcademies = <ValueAcademy>[
 ];
 
 class ValueAcademyHero extends StatelessWidget {
+  final AcademyStudentProfile? profile;
+  final VoidCallback onEditProfile;
   final VoidCallback onOpenMap;
   final VoidCallback onQuickCheck;
 
   const ValueAcademyHero({
     super.key,
+    required this.profile,
+    required this.onEditProfile,
     required this.onOpenMap,
     required this.onQuickCheck,
   });
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(18, 17, 18, 16),
+    padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: const Color(0xff163A30),
-      borderRadius: BorderRadius.circular(20),
+      color: surface,
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: const Color(0xffD9E4F5)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '30만 원 이하 학원,\n인증 후기와 함께 찾기',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            height: 1.18,
-            fontWeight: FontWeight.w600,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: lavender,
+            borderRadius: BorderRadius.circular(99),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome_rounded, size: 14, color: lime),
+              SizedBox(width: 5),
+              Text(
+                '맞춤 학원 추천',
+                style: TextStyle(
+                  color: lime,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 15),
         const Text(
-          '동네·과목·예산만 고르면 검수된 후보를 비교해요.',
-          style: TextStyle(color: Color(0xffC8DDD5), fontSize: 10, height: 1.5),
+          '학원, 가치 있게\n같이 찾기',
+          style: TextStyle(
+            color: text,
+            fontSize: 25,
+            height: 1.18,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        const SizedBox(height: 13),
+        const SizedBox(height: 8),
+        const Text(
+          '학생의 학년·과목·학습 스타일을 바탕으로\n꼭 맞는 학원을 추천해 드려요.',
+          style: TextStyle(color: mute, fontSize: 12, height: 1.55),
+        ),
+        const SizedBox(height: 18),
+        _AcademyProfileInline(profile: profile, onTap: onEditProfile),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
               child: FilledButton.icon(
                 onPressed: onOpenMap,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xffA7F3D0),
-                  foregroundColor: const Color(0xff163A30),
+                  backgroundColor: lime,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(48),
                 ),
                 icon: const Icon(Icons.map_outlined, size: 18),
                 label: const Text('학원 지도 보기'),
               ),
             ),
             const SizedBox(width: 8),
-            TextButton(
+            OutlinedButton(
               onPressed: onQuickCheck,
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: lime,
+                side: const BorderSide(color: Color(0xffA9C4FC)),
+                minimumSize: const Size(86, 48),
+              ),
               child: const Text('3초 진단'),
             ),
           ],
@@ -1073,6 +1155,82 @@ class ValueAcademyHero extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _AcademyProfileInline extends StatelessWidget {
+  final AcademyStudentProfile? profile;
+  final VoidCallback onTap;
+
+  const _AcademyProfileInline({required this.profile, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final registered = profile != null;
+    final title = registered
+        ? '${profile!.name} · ${profile!.grade}'
+        : '학생 정보 등록';
+    final detail = registered
+        ? '${profile!.school} · ${profile!.subjects.join('·')}'
+        : '나에게 맞는 학원을 추천받아 보세요';
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: const Color(0xffD9E4F5)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 35,
+                height: 35,
+                decoration: BoxDecoration(
+                  color: lavender,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(
+                  registered
+                      ? Icons.person_outline_rounded
+                      : Icons.person_add_alt_1_outlined,
+                  size: 19,
+                  color: lime,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      detail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: mute, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, size: 19, color: mute),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ValueAcademyMapPage extends StatefulWidget {
@@ -1696,7 +1854,7 @@ const demoIntelReports = <LocalIntelReport>[
     region: '목동',
     title: '영어 단과 레테비 면제 제보',
     body: '이번 주 상담 예약자 대상으로 레벨테스트 비용 면제 안내를 받았다는 제보입니다. 학원에 직접 재확인해 주세요.',
-    proofStatus: 'MVP 데모 · 검수 전',
+    proofStatus: '예시 게시글 · 확인 전',
     time: '방금',
     isDemo: true,
   ),
@@ -1705,7 +1863,7 @@ const demoIntelReports = <LocalIntelReport>[
     region: '강남',
     title: '수학 소수정예 월 교습비 제보',
     body: '교재비·클리닉비를 포함하면 상담 금액과 실제 결제 금액이 다르다는 유형의 제보입니다.',
-    proofStatus: 'MVP 데모 · 영수증 필요',
+    proofStatus: '예시 게시글 · 영수증 확인 필요',
     time: '20분 전',
     isDemo: true,
   ),
@@ -1714,7 +1872,7 @@ const demoIntelReports = <LocalIntelReport>[
     region: '분당',
     title: '과학 내신반 대기 접수 제보',
     body: '중간고사 대비반 추가 반 개설 문의가 많아 대기 명단을 받고 있다는 제보입니다.',
-    proofStatus: 'MVP 데모 · 재확인 필요',
+    proofStatus: '예시 게시글 · 재확인 필요',
     time: '1시간 전',
     isDemo: true,
   ),
@@ -1789,56 +1947,34 @@ class _CommunityState extends State<Community> {
       children: [
         Row(
           children: [
-            const Expanded(
-              child: Text(
-                '리얼 제보 · 핫딜',
-                style: TextStyle(
-                  color: text,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w600,
-                ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '목동 학원 이야기',
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    '우리 동네 학원 정보를 함께 나눠요.',
+                    style: TextStyle(color: mute, fontSize: 11),
+                  ),
+                ],
               ),
             ),
             FilledButton.icon(
               onPressed: _submitReport,
-              icon: const Icon(Icons.campaign_outlined, size: 17),
-              label: const Text('제보'),
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: const Text('글쓰기'),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        const Text(
-          '이번 주 우리 동네 학원가의 핫딜·비용·마감 신호를 빠르게 모아봐요.',
-          style: TextStyle(color: mute, fontSize: 11, height: 1.5),
-        ),
-        const SizedBox(height: 15),
-        _RollingIntelHook(items: reports.take(3).toList()),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xffFFF4E8),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.gpp_good_outlined, color: Color(0xffA9531F), size: 19),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '검수 전 학원명은 익명 처리하고, 개인 실명·연락처·미확인 범죄 주장은 노출하지 않습니다.',
-                  style: TextStyle(
-                    color: Color(0xff87451E),
-                    fontSize: 9,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 19),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -1856,7 +1992,16 @@ class _CommunityState extends State<Community> {
                 .toList(),
           ),
         ),
-        const SizedBox(height: 13),
+        const SizedBox(height: 16),
+        const Text(
+          '최신 글',
+          style: TextStyle(
+            color: text,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
         ...visible.map((item) => _IntelFeedCard(item: item)),
       ],
     );
@@ -1922,79 +2067,101 @@ class _IntelFeedCard extends StatelessWidget {
   const _IntelFeedCard({required this.item});
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(17),
-    decoration: BoxDecoration(
-      color: surface,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: item.category == '핫딜'
-                    ? const Color(0xffFFE9DE)
-                    : lavender,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
+  Widget build(BuildContext context) => InkWell(
+    borderRadius: BorderRadius.circular(18),
+    onTap: () =>
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('게시글 상세 화면은 준비 중입니다.'))),
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xffE6EAF1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
                 '${item.region} · ${item.category}',
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
+                style: const TextStyle(color: mute, fontSize: 10),
+              ),
+              const SizedBox(width: 5),
+              const Text('·', style: TextStyle(color: Color(0xffC3CAD6))),
+              const SizedBox(width: 5),
+              Text(
+                item.time,
+                style: const TextStyle(color: mute, fontSize: 10),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () => ScaffoldMessenger.of(context)
+                    .showSnackBar(const SnackBar(content: Text('신고가 접수됐습니다.'))),
+                tooltip: '신고',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(
+                  Icons.more_horiz_rounded,
+                  color: mute,
+                  size: 20,
                 ),
               ),
-            ),
-            const Spacer(),
-            Text(item.time, style: const TextStyle(color: mute, fontSize: 9)),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(
-          item.title,
-          style: const TextStyle(
-            color: text,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+            ],
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          item.body,
-          style: const TextStyle(color: mute, fontSize: 11, height: 1.5),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Icon(
-              item.isDemo ? Icons.science_outlined : Icons.schedule_rounded,
-              color: item.isDemo ? coral : lime,
-              size: 16,
+          const SizedBox(height: 4),
+          Text(
+            item.title,
+            style: const TextStyle(
+              color: text,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                item.proofStatus,
-                style: TextStyle(
-                  color: item.isDemo ? coral : lime,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            item.body,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: mute, fontSize: 11, height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                item.isDemo
+                    ? Icons.info_outline_rounded
+                    : Icons.verified_outlined,
+                color: item.isDemo ? coral : lime,
+                size: 15,
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  item.proofStatus,
+                  style: TextStyle(
+                    color: item.isDemo ? coral : lime,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: () => ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('신고가 접수됐습니다.'))),
-              child: const Text('신고', style: TextStyle(fontSize: 9)),
-            ),
-          ],
-        ),
-      ],
+              const Icon(Icons.favorite_border_rounded, color: mute, size: 16),
+              const SizedBox(width: 4),
+              const Text('공감', style: TextStyle(color: mute, fontSize: 9)),
+              const SizedBox(width: 12),
+              const Icon(
+                Icons.chat_bubble_outline_rounded,
+                color: mute,
+                size: 15,
+              ),
+              const SizedBox(width: 4),
+              const Text('댓글', style: TextStyle(color: mute, fontSize: 9)),
+            ],
+          ),
+        ],
+      ),
     ),
   );
 }

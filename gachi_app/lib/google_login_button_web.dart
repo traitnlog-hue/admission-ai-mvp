@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in_web/web_only.dart' as web;
+import 'package:flutter/material.dart';
 
-Widget buildGoogleLoginButton({required VoidCallback onPressed}) => Center(
-  child: web.renderButton(
-    configuration: web.GSIButtonConfiguration(
-      type: web.GSIButtonType.standard,
-      theme: web.GSIButtonTheme.outline,
-      size: web.GSIButtonSize.large,
-      text: web.GSIButtonText.continueWith,
-      shape: web.GSIButtonShape.pill,
-      minimumWidth: 360,
-      locale: 'ko',
-    ),
-  ),
-);
+Widget buildGoogleLoginButton({required VoidCallback onPressed}) =>
+    OutlinedButton.icon(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xff14161B),
+        backgroundColor: Colors.white,
+        side: const BorderSide(color: Color(0xffD9DEE8)),
+        minimumSize: const Size.fromHeight(52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      icon: const Text(
+        'G',
+        style: TextStyle(
+          color: Color(0xff4285F4),
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      label: const Text('Google로 계속하기'),
+    );

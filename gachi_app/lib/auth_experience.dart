@@ -8,6 +8,7 @@ class SessionUser {
   final String? authToken;
   final bool isIdentityVerified;
   final String? identityProvider;
+  final bool isAdmin;
 
   const SessionUser({
     required this.name,
@@ -17,6 +18,7 @@ class SessionUser {
     this.authToken,
     this.isIdentityVerified = false,
     this.identityProvider,
+    this.isAdmin = false,
   });
 }
 
@@ -26,6 +28,122 @@ const _authApiBaseUrl = String.fromEnvironment(
   'AUTH_API_BASE_URL',
   defaultValue: 'http://127.0.0.1:8000',
 );
+const _supabaseUrl = String.fromEnvironment(
+  'SUPABASE_URL',
+  defaultValue: 'https://pimaydummhqoacrezkco.supabase.co',
+);
+const _supabasePublishableKey = String.fromEnvironment(
+  'SUPABASE_PUBLISHABLE_KEY',
+  defaultValue: 'sb_publishable_SkSQFi9-kQO5zki89gQMFw_Y_Oza1p2',
+);
+
+class SupabaseAuthService {
+  static bool _initialized = false;
+
+  static bool get isEnabled => _initialized;
+
+  static String? get emailRedirectUrl => kIsWeb ? Uri.base.origin : null;
+
+  static Future<void> initialize() async {
+    if (_supabaseUrl.isEmpty || _supabasePublishableKey.isEmpty) return;
+    await Supabase.initialize(
+      url: _supabaseUrl,
+      publishableKey: _supabasePublishableKey,
+    );
+    _initialized = true;
+  }
+
+  static Future<SessionUser?> restoreUser() async {
+    if (!isEnabled) return null;
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) return null;
+    try {
+      final response = await Supabase.instance.client.auth.refreshSession();
+      final user = response.user ?? currentUser;
+      return fromUser(user);
+    } catch (_) {
+      // 네트워크가 잠시 끊겨도 저장된 Supabase 세션은 사용할 수 있다.
+      return fromUser(currentUser);
+    }
+  }
+
+  static Future<SessionUser> authenticate({
+    required bool createAccount,
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    if (!isEnabled) {
+      throw const EmailAuthException('Supabase Auth 설정이 필요합니다.');
+    }
+    final response = createAccount
+        ? await Supabase.instance.client.auth.signUp(
+            email: email.trim(),
+            password: password,
+            data: {'full_name': name.trim()},
+            emailRedirectTo: emailRedirectUrl,
+          )
+        : await Supabase.instance.client.auth.signInWithPassword(
+            email: email.trim(),
+            password: password,
+          );
+    final signedInUser = response.user;
+    if (signedInUser == null) {
+      throw const EmailAuthException('Supabase 로그인을 완료하지 못했습니다.');
+    }
+    if (createAccount && response.session == null) {
+      throw const EmailConfirmationRequired();
+    }
+    return fromUser(signedInUser);
+  }
+
+  static Future<void> logout() async {
+    if (isEnabled) await Supabase.instance.client.auth.signOut();
+  }
+
+  static Future<void> sendPasswordReset(String email) async {
+    if (!isEnabled) {
+      throw const EmailAuthException('Supabase Auth 설정이 필요합니다.');
+    }
+    await Supabase.instance.client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: emailRedirectUrl,
+    );
+  }
+
+  /// 웹과 모바일 브라우저에서 Supabase가 관리하는 Google OAuth 흐름을 연다.
+  /// Google Client Secret은 앱에 두지 않고 Supabase Auth에만 보관한다.
+  static Future<void> signInWithGoogle() async {
+    if (!isEnabled) {
+      throw const EmailAuthException('Supabase Auth 설정이 필요합니다.');
+    }
+    await Supabase.instance.client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: emailRedirectUrl,
+      // Google 브라우저 세션이 남아 있어도 매번 계정을 직접 선택하게 한다.
+      queryParams: const {'prompt': 'select_account'},
+    );
+  }
+
+  static SessionUser fromUser(User user) {
+    final metadataName = user.userMetadata?['full_name']?.toString().trim();
+    final email = user.email ?? '';
+    return SessionUser(
+      name: metadataName?.isNotEmpty == true
+          ? metadataName!
+          : email.isNotEmpty
+          ? email.split('@').first
+          : 'GACHI 학생',
+      email: email,
+      authProvider: 'supabase',
+      isAdmin: user.appMetadata['gachi_role'] == 'admin',
+    );
+  }
+}
+
+class EmailConfirmationRequired implements Exception {
+  const EmailConfirmationRequired();
+}
 
 class GoogleAuthService {
   static final GoogleSignIn _signIn = GoogleSignIn.instance;
@@ -163,16 +281,49 @@ class _AuthGateState extends State<AuthGate> {
 
   bool loading = true;
   SessionUser? user;
+  StreamSubscription<AuthState>? supabaseAuthSubscription;
 
   @override
   void initState() {
     super.initState();
+    _listenToSupabaseAuth();
     _restoreSession();
+  }
+
+  void _listenToSupabaseAuth() {
+    if (!SupabaseAuthService.isEnabled) return;
+    supabaseAuthSubscription = Supabase.instance.client.auth.onAuthStateChange
+        .listen((state) async {
+          final signedInUser = state.session?.user;
+          if (signedInUser != null) {
+            await _authenticate(
+              SupabaseAuthService.fromUser(signedInUser),
+              persist: false,
+            );
+          } else if (state.event == AuthChangeEvent.signedOut && mounted) {
+            setState(() => user = null);
+          }
+        });
+  }
+
+  @override
+  void dispose() {
+    supabaseAuthSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _restoreSession() async {
     SessionUser? restoredUser;
     try {
+      restoredUser = await SupabaseAuthService.restoreUser();
+      if (restoredUser != null) {
+        if (!mounted) return;
+        setState(() {
+          user = restoredUser;
+          loading = false;
+        });
+        return;
+      }
       final preferences = await SharedPreferences.getInstance().timeout(
         const Duration(seconds: 2),
       );
@@ -233,6 +384,7 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _logout() async {
     if (user?.authProvider == 'google') await GoogleAuthService.signOut();
+    if (user?.authProvider == 'supabase') await SupabaseAuthService.logout();
     if (user?.authProvider == 'email' && user?.authToken != null) {
       await EmailAuthService.logout(user!.authToken!);
     }
@@ -267,49 +419,14 @@ class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
-  StreamSubscription<GoogleSignInAuthenticationEvent>? googleSubscription;
   bool createAccount = false;
   bool submitting = false;
   bool obscurePassword = true;
-  bool googleReady = false;
   String? errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _prepareGoogle();
-  }
-
-  Future<void> _prepareGoogle() async {
-    if (kIsWeb && _googleClientId.isEmpty) return;
-    try {
-      await GoogleAuthService.prepare();
-      googleSubscription = GoogleAuthService.authenticationEvents.listen(
-        (event) async {
-          if (event is GoogleSignInAuthenticationEventSignIn) {
-            await widget.onAuthenticated(
-              GoogleAuthService.fromAccount(event.user),
-              persist: true,
-            );
-          }
-        },
-        onError: (_) {
-          if (mounted) {
-            setState(
-              () => errorMessage = 'Google 로그인에 실패했습니다. OAuth 설정을 확인해 주세요.',
-            );
-          }
-        },
-      );
-      if (mounted) setState(() => googleReady = true);
-    } catch (_) {
-      if (mounted) setState(() => googleReady = false);
-    }
-  }
+  String? confirmationMessage;
 
   @override
   void dispose() {
-    googleSubscription?.cancel();
     emailController.dispose();
     passwordController.dispose();
     nameController.dispose();
@@ -320,16 +437,20 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       submitting = true;
       errorMessage = null;
+      confirmationMessage = null;
     });
     try {
-      await widget.onAuthenticated(
-        await GoogleAuthService.authenticate(),
-        persist: true,
-      );
-    } on GoogleSignInException catch (_) {
-      if (mounted) setState(() => errorMessage = 'Google 로그인을 완료하지 못했습니다.');
-    } catch (error) {
-      if (mounted) setState(() => errorMessage = error.toString());
+      await SupabaseAuthService.signInWithGoogle();
+    } on AuthException catch (error) {
+      if (mounted) setState(() => errorMessage = _authErrorMessage(error));
+    } on EmailAuthException catch (error) {
+      if (mounted) setState(() => errorMessage = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => errorMessage = 'Google 로그인 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요.',
+        );
+      }
     } finally {
       if (mounted) setState(() => submitting = false);
     }
@@ -354,27 +475,110 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       submitting = true;
       errorMessage = null;
+      confirmationMessage = null;
     });
     try {
-      final user = await EmailAuthService.authenticate(
-        createAccount: createAccount,
-        email: email,
-        password: password,
-        name: name,
-      );
+      final user = SupabaseAuthService.isEnabled
+          ? await SupabaseAuthService.authenticate(
+              createAccount: createAccount,
+              email: email,
+              password: password,
+              name: name,
+            )
+          : await EmailAuthService.authenticate(
+              createAccount: createAccount,
+              email: email,
+              password: password,
+              name: name,
+            );
       await widget.onAuthenticated(user, persist: true);
+    } on EmailConfirmationRequired {
+      if (mounted) {
+        setState(() {
+          createAccount = false;
+          confirmationMessage = '인증 메일을 보냈어요. 메일의 확인 버튼을 누르면 이 화면으로 돌아와 자동 로그인됩니다. 메일을 확인한 뒤에는 이메일과 비밀번호로 로그인해 주세요.';
+        });
+      }
+    } on AuthException catch (error) {
+      if (mounted) setState(() => errorMessage = _authErrorMessage(error));
     } on EmailAuthException catch (error) {
       if (mounted) setState(() => errorMessage = error.message);
     } catch (_) {
       if (mounted) {
-        setState(
-          () => errorMessage = '로그인 서버에 연결할 수 없습니다. API 서버 실행 상태를 확인해 주세요.',
-        );
+        setState(() {
+          errorMessage = SupabaseAuthService.isEnabled
+              ? 'Supabase Auth에 연결할 수 없습니다. 프로젝트 설정과 네트워크를 확인해 주세요.'
+              : '로그인 서버에 연결할 수 없습니다. API 서버 실행 상태를 확인해 주세요.';
+        });
       }
     } finally {
       if (mounted) setState(() => submitting = false);
     }
   }
+
+  String _authErrorMessage(AuthException error) {
+    final message = error.message.toLowerCase();
+    if (message.contains('invalid login credentials')) {
+      return '이메일 또는 비밀번호가 맞지 않습니다. 비밀번호를 잊었다면 재설정 메일을 받아보세요.';
+    }
+    if (message.contains('email not confirmed')) {
+      return '이메일 인증이 아직 완료되지 않았습니다. 받은편지함에서 인증 메일을 확인해 주세요.';
+    }
+    if (message.contains('email rate limit exceeded')) {
+      return '요청이 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.';
+    }
+    return '로그인에 실패했습니다. ${error.message}';
+  }
+
+  Future<void> _resetPassword() async {
+    final email = emailController.text.trim();
+    if (!email.contains('@')) {
+      setState(() => errorMessage = '비밀번호 재설정 메일을 받을 이메일을 입력해 주세요.');
+      return;
+    }
+    setState(() {
+      submitting = true;
+      errorMessage = null;
+      confirmationMessage = null;
+    });
+    try {
+      await SupabaseAuthService.sendPasswordReset(email);
+      if (mounted) {
+        setState(() {
+          confirmationMessage = '비밀번호 재설정 메일을 보냈어요. 메일의 링크에서 새 비밀번호를 설정해 주세요.';
+        });
+      }
+    } on AuthException catch (error) {
+      if (mounted) setState(() => errorMessage = _authErrorMessage(error));
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          errorMessage = '재설정 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => submitting = false);
+    }
+  }
+
+  Future<void> _showFindEmailIdGuide() => showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('아이디 찾기'),
+      content: const Text(
+        'GACHI에서는 가입할 때 입력한 이메일 주소가 아이디입니다.\n\n'
+        '개인정보 보호를 위해 앱에서 가입 이메일을 직접 조회하거나 표시하지 않습니다. '
+        '가입 이메일을 기억하셨다면 입력란에 적은 뒤 비밀번호 찾기를 이용해 계정을 확인할 수 있어요.',
+        style: TextStyle(height: 1.55),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('확인'),
+        ),
+      ],
+    ),
+  );
 
   InputDecoration _inputDecoration(String label, IconData icon) =>
       InputDecoration(
@@ -420,22 +624,15 @@ class _LoginPageState extends State<LoginPage> {
                   '계정 하나로 진단 결과와 목표 플랜을 안전하게 이어서 관리하세요.',
                   style: TextStyle(color: mute, fontSize: 12, height: 1.5),
                 ),
-                const SizedBox(height: 24),
-                if (googleReady)
-                  buildGoogleLoginButton(onPressed: _signInWithGoogle)
-                else
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(13),
-                    decoration: BoxDecoration(
-                      color: const Color(0xffFFF4E5),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Text(
-                      'Google 로그인 준비 필요 · GOOGLE_CLIENT_ID와 허용 도메인을 설정해 주세요.',
-                      style: TextStyle(color: Color(0xff8A5300), fontSize: 11),
-                    ),
+                if (SupabaseAuthService.isEnabled) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    '이메일 계정은 Supabase Auth로 안전하게 관리됩니다.',
+                    style: TextStyle(color: mute, fontSize: 11),
                   ),
+                ],
+                const SizedBox(height: 24),
+                buildGoogleLoginButton(onPressed: _signInWithGoogle),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: Row(
@@ -464,6 +661,7 @@ class _LoginPageState extends State<LoginPage> {
                       : (value) => setState(() {
                           createAccount = value.first;
                           errorMessage = null;
+                          confirmationMessage = null;
                         }),
                 ),
                 const SizedBox(height: 16),
@@ -522,6 +720,25 @@ class _LoginPageState extends State<LoginPage> {
                         : '이메일로 로그인',
                   ),
                 ),
+                if (!createAccount)
+                  Center(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        TextButton(
+                          key: const Key('find-email-id-button'),
+                          onPressed: submitting ? null : _showFindEmailIdGuide,
+                          child: const Text('아이디 찾기'),
+                        ),
+                        const Text('·', style: TextStyle(color: mute)),
+                        TextButton(
+                          key: const Key('reset-password-button'),
+                          onPressed: submitting ? null : _resetPassword,
+                          child: const Text('비밀번호 찾기'),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (errorMessage != null) ...[
                   const SizedBox(height: 12),
                   Container(
@@ -535,6 +752,25 @@ class _LoginPageState extends State<LoginPage> {
                       errorMessage!,
                       style: const TextStyle(
                         color: Color(0xffA53C24),
+                        fontSize: 10,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+                if (confirmationMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffEAF7F0),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Text(
+                      confirmationMessage!,
+                      style: const TextStyle(
+                        color: Color(0xff176B47),
                         fontSize: 10,
                         height: 1.5,
                       ),
