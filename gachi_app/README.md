@@ -13,7 +13,16 @@ flutter run -d chrome
 
 ## 로그인
 
-현재 로그인은 UI·세션 흐름 검증을 위한 로컬 MVP 구현입니다. 이메일과 이름만 기기에 유지하며 비밀번호는 저장하지 않습니다. 운영 배포 전에는 서버 기반 인증, 이메일 검증, 비밀번호 재설정과 토큰 만료 처리가 필요합니다.
+앱 로그인·로그아웃은 공식 `google_sign_in` SDK에 연결되어 있습니다. 체험 모드는 로그인 없이 UX를 확인하기 위한 별도 흐름입니다.
+
+Android는 Google Cloud/Firebase에 실제 패키지명과 debug·release·Play App Signing SHA 인증서를 등록하고 `android/app/google-services.json`을 추가하거나, Web OAuth 클라이언트 ID를 `GOOGLE_SERVER_CLIENT_ID`로 전달해야 합니다.
+
+```bash
+flutter run -d android \
+  --dart-define=GOOGLE_SERVER_CLIENT_ID=YOUR_WEB_OAUTH_CLIENT_ID
+```
+
+iOS는 OAuth iOS 클라이언트와 URL Scheme을 `ios/Runner/Info.plist`에 등록해야 합니다. 웹은 Web OAuth 클라이언트 ID와 Google 공식 웹 버튼 구성이 추가로 필요합니다. 운영 서비스에서는 앱에서 받은 Google ID 토큰을 서버에서 검증하고 자체 세션을 발급해야 합니다.
 
 ## 카카오맵
 
@@ -21,11 +30,21 @@ flutter run -d chrome
 
 ## 결제
 
-기본값은 실제 청구가 발생하지 않는 테스트 결제 모드입니다. 운영 결제 서버가 준비되면 다음과 같이 체크아웃 URL을 주입할 수 있습니다.
+Android·iOS 결제는 공식 `in_app_purchase` SDK를 사용하며 Google Play Billing과 Apple StoreKit에 연결됩니다. 기본 상품 ID는 `gachi_admission_pro`입니다. 실제 청구를 열기 전에 두 스토어에 같은 상품을 등록하고, 영수증을 서버에서 검증하는 API를 연결해야 합니다.
+
+```bash
+flutter run -d android \
+  --dart-define=STORE_PRODUCT_ID=gachi_admission_pro \
+  --dart-define=PURCHASE_VERIFICATION_URL=https://api.example.com/purchases/verify
+```
+
+검증 API는 앱이 전송하는 `productId`, `purchaseId`, `source`, `serverVerificationData`를 Google Play Developer API 또는 App Store Server API로 검증하고 성공 시 `{ "valid": true }`를 반환해야 합니다. 검증 URL이 없으면 앱은 실제 구매를 시작하지 않습니다. 구매 복원 기능도 포함되어 있습니다.
+
+웹 체크아웃을 별도로 운영할 경우 기존 URL 연결도 사용할 수 있습니다.
 
 ```bash
 flutter run -d chrome \
   --dart-define=PAYMENT_CHECKOUT_URL=https://your-domain.example/checkout
 ```
 
-앱은 `orderId`, `orderName`, `amount`, `method` 쿼리 파라미터를 전달합니다. 운영 결제에서는 반드시 서버에서 결제 승인, 금액 검증, 웹훅 검증과 사용자 권한 부여를 처리해야 합니다.
+앱은 `orderId`, `orderName`, `amount`, `method` 쿼리 파라미터를 전달합니다. 웹 결제도 반드시 서버에서 승인 금액과 웹훅을 검증한 뒤 사용자 권한을 부여해야 합니다.

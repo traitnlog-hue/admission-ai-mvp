@@ -1,6 +1,13 @@
 part of 'main.dart';
 
 const _paymentCheckoutUrl = String.fromEnvironment('PAYMENT_CHECKOUT_URL');
+const _storeProductId = String.fromEnvironment(
+  'STORE_PRODUCT_ID',
+  defaultValue: 'gachi_admission_pro',
+);
+const _purchaseVerificationUrl = String.fromEnvironment(
+  'PURCHASE_VERIFICATION_URL',
+);
 
 Future<void> openKakaoMapSearch(BuildContext context, String query) async {
   final encodedQuery = Uri.encodeComponent(query);
@@ -355,12 +362,14 @@ class PaymentPage extends StatefulWidget {
   final String productName;
   final int price;
   final Map<String, dynamic>? freeResult;
+  final bool forceTestMode;
 
   const PaymentPage({
     super.key,
     required this.productName,
     required this.price,
     this.freeResult,
+    this.forceTestMode = false,
   });
 
   @override
@@ -368,9 +377,103 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  String method = '카드';
   bool agreed = false;
   bool processing = false;
+  bool storeLoading = true;
+  bool storeAvailable = false;
+  String? storeMessage;
+  ProductDetails? storeProduct;
+  StreamSubscription<List<PurchaseDetails>>? purchaseSubscription;
+
+  bool get nativeStoreSupported =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+
+  bool get storeReadyForPurchase =>
+      storeAvailable && _purchaseVerificationUrl.isNotEmpty;
+
+  String get storeName => switch (defaultTargetPlatform) {
+    TargetPlatform.iOS => 'Apple App Store',
+    TargetPlatform.android => 'Google Play',
+    _ => '모바일 앱스토어',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.forceTestMode) {
+      storeLoading = false;
+      return;
+    }
+    if (!nativeStoreSupported) {
+      unawaited(_loadStore());
+      return;
+    }
+    purchaseSubscription = InAppPurchase.instance.purchaseStream.listen(
+      _handlePurchaseUpdates,
+      onError: (_) {
+        if (mounted) {
+          setState(() {
+            processing = false;
+            storeMessage = '스토어 결제 상태를 불러오지 못했습니다.';
+          });
+        }
+      },
+    );
+    unawaited(_loadStore());
+  }
+
+  @override
+  void dispose() {
+    purchaseSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadStore() async {
+    if (!nativeStoreSupported) {
+      if (mounted) {
+        setState(() {
+          storeLoading = false;
+          storeMessage = '스토어 결제는 Android·iOS 앱에서 사용할 수 있습니다.';
+        });
+      }
+      return;
+    }
+    try {
+      final available = await InAppPurchase.instance.isAvailable();
+      if (!available) {
+        if (mounted) {
+          setState(() {
+            storeLoading = false;
+            storeMessage = '$storeName에 연결할 수 없습니다.';
+          });
+        }
+        return;
+      }
+      final response = await InAppPurchase.instance.queryProductDetails({
+        _storeProductId,
+      });
+      final product = response.productDetails.isEmpty
+          ? null
+          : response.productDetails.first;
+      if (!mounted) return;
+      setState(() {
+        storeLoading = false;
+        storeAvailable = product != null;
+        storeProduct = product;
+        storeMessage = product == null
+            ? '$storeName에 상품 ID $_storeProductId를 등록해 주세요.'
+            : null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        storeLoading = false;
+        storeMessage = '$storeName 초기화에 실패했습니다. 스토어 설정을 확인해 주세요.';
+      });
+    }
+  }
 
   String get formattedPrice {
     final digits = widget.price.toString();
@@ -382,6 +485,8 @@ class _PaymentPageState extends State<PaymentPage> {
     return '$buffer원';
   }
 
+  String get displayedPrice => storeProduct?.price ?? formattedPrice;
+
   Future<void> _pay() async {
     if (!agreed) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -389,16 +494,21 @@ class _PaymentPageState extends State<PaymentPage> {
       );
       return;
     }
-    setState(() => processing = true);
-    final orderId = 'GACHI-${DateTime.now().millisecondsSinceEpoch}';
 
-    if (_paymentCheckoutUrl.isNotEmpty) {
+    if (widget.forceTestMode) {
+      await _runTestPayment();
+      return;
+    }
+
+    if (!nativeStoreSupported && _paymentCheckoutUrl.isNotEmpty) {
+      setState(() => processing = true);
+      final orderId = 'GACHI-${DateTime.now().millisecondsSinceEpoch}';
       final uri = Uri.parse(_paymentCheckoutUrl).replace(
         queryParameters: {
           'orderId': orderId,
           'orderName': widget.productName,
           'amount': widget.price.toString(),
-          'method': method,
+          'method': 'web',
         },
       );
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -410,6 +520,50 @@ class _PaymentPageState extends State<PaymentPage> {
       return;
     }
 
+    final product = storeProduct;
+    if (!nativeStoreSupported || !storeAvailable || product == null) {
+      await _showStoreSetupDialog();
+      return;
+    }
+    if (_purchaseVerificationUrl.isEmpty) {
+      await _showStoreSetupDialog(
+        message: '상품은 조회됐지만 구매 검증 서버가 연결되지 않았습니다. 실제 청구 전에 PURCHASE_VERIFICATION_URL을 설정해 주세요.',
+      );
+      return;
+    }
+    setState(() => processing = true);
+    try {
+      await InAppPurchase.instance.buyNonConsumable(
+        purchaseParam: PurchaseParam(productDetails: product),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => processing = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('스토어 결제를 시작하지 못했습니다.')));
+    }
+  }
+
+  Future<void> _showStoreSetupDialog({String? message}) => showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('$storeName 연결 준비 중'),
+      content: Text(
+        message ?? storeMessage ?? '스토어 상품과 구매 검증 서버 설정을 확인한 후 다시 시도해 주세요.',
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('확인'),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _runTestPayment() async {
+    setState(() => processing = true);
+    final orderId = 'GACHI-TEST-${DateTime.now().millisecondsSinceEpoch}';
+
     await Future<void>.delayed(const Duration(milliseconds: 550));
     if (!mounted) return;
     final confirmed = await showDialog<bool>(
@@ -417,7 +571,7 @@ class _PaymentPageState extends State<PaymentPage> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('테스트 결제 확인'),
         content: Text(
-          '$method 방식으로 $formattedPrice 테스트 결제를 완료할까요?\n\n운영 가맹점 키가 연결되기 전에는 실제 금액이 청구되지 않습니다.',
+          '$formattedPrice 테스트 결제를 완료할까요?\n\n위젯 테스트 전용 흐름이며 실제 금액은 청구되지 않습니다.',
         ),
         actions: [
           TextButton(
@@ -435,6 +589,86 @@ class _PaymentPageState extends State<PaymentPage> {
       setState(() => processing = false);
       return;
     }
+    await _unlockPremium(orderId);
+  }
+
+  Future<void> _handlePurchaseUpdates(List<PurchaseDetails> purchases) async {
+    for (final purchase in purchases) {
+      if (!mounted) return;
+      if (purchase.status == PurchaseStatus.pending) {
+        setState(() => processing = true);
+        continue;
+      }
+      if (purchase.status == PurchaseStatus.error ||
+          purchase.status == PurchaseStatus.canceled) {
+        setState(() => processing = false);
+        if (purchase.status == PurchaseStatus.error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(purchase.error?.message ?? '결제가 취소되었습니다.')),
+          );
+        }
+        continue;
+      }
+      if (purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored) {
+        final verified = await _verifyPurchase(purchase);
+        if (!mounted) return;
+        if (!verified) {
+          setState(() => processing = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('구매 검증에 실패했습니다. 결제 내역에서 다시 확인해 주세요.')),
+          );
+          continue;
+        }
+        if (purchase.pendingCompletePurchase) {
+          await InAppPurchase.instance.completePurchase(purchase);
+        }
+        await _unlockPremium(
+          purchase.purchaseID ??
+              'STORE-${DateTime.now().millisecondsSinceEpoch}',
+        );
+      }
+    }
+  }
+
+  Future<bool> _verifyPurchase(PurchaseDetails purchase) async {
+    if (_purchaseVerificationUrl.isEmpty) return false;
+    try {
+      final response = await http
+          .post(
+            Uri.parse(_purchaseVerificationUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'productId': purchase.productID,
+              'purchaseId': purchase.purchaseID,
+              'source': purchase.verificationData.source,
+              'serverVerificationData':
+                  purchase.verificationData.serverVerificationData,
+            }),
+          )
+          .timeout(const Duration(seconds: 12));
+      if (response.statusCode < 200 || response.statusCode >= 300) return false;
+      final data = jsonDecode(response.body);
+      return data is Map && data['valid'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _restorePurchases() async {
+    if (!nativeStoreSupported || _purchaseVerificationUrl.isEmpty) {
+      await _showStoreSetupDialog();
+      return;
+    }
+    setState(() => processing = true);
+    try {
+      await InAppPurchase.instance.restorePurchases();
+    } catch (_) {
+      if (mounted) setState(() => processing = false);
+    }
+  }
+
+  Future<void> _unlockPremium(String orderId) async {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setBool('gachi.purchase.admission_pro', true);
     await preferences.setString('gachi.purchase.last_order', orderId);
@@ -462,7 +696,57 @@ class _PaymentPageState extends State<PaymentPage> {
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
       children: [
-        if (_paymentCheckoutUrl.isEmpty)
+        if (!widget.forceTestMode)
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: storeReadyForPurchase
+                  ? const Color(0xffEAF8F3)
+                  : const Color(0xffFFF4D4),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                if (storeLoading)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(
+                    storeReadyForPurchase
+                        ? Icons.verified_rounded
+                        : Icons.info_outline_rounded,
+                    color: storeReadyForPurchase
+                        ? const Color(0xff168A73)
+                        : const Color(0xff8A6800),
+                    size: 19,
+                  ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    storeLoading
+                        ? '$storeName 상품을 확인하고 있습니다.'
+                        : storeReadyForPurchase
+                        ? '$storeName 공식 인앱결제로 안전하게 결제합니다.'
+                        : storeAvailable
+                        ? '상품을 찾았습니다. 구매 검증 서버 연결이 필요합니다.'
+                        : storeMessage ?? '스토어 설정을 확인해 주세요.',
+                    style: TextStyle(
+                      color: storeReadyForPurchase
+                          ? const Color(0xff126A5A)
+                          : const Color(0xff705600),
+                      fontSize: 10,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
           Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(13),
@@ -471,7 +755,7 @@ class _PaymentPageState extends State<PaymentPage> {
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Text(
-              '테스트 결제 모드입니다. 운영 결제 URL이 설정되기 전에는 실제 금액이 청구되지 않습니다.',
+              '자동 테스트용 결제 모드입니다. 실제 금액은 청구되지 않습니다.',
               style: TextStyle(
                 color: Color(0xff705600),
                 fontSize: 10,
@@ -504,7 +788,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 ),
               ),
               Text(
-                formattedPrice,
+                displayedPrice,
                 style: const TextStyle(
                   color: text,
                   fontSize: 19,
@@ -520,32 +804,49 @@ class _PaymentPageState extends State<PaymentPage> {
           style: TextStyle(color: text, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 10),
-        RadioGroup<String>(
-          groupValue: method,
-          onChanged: (value) {
-            if (value != null) setState(() => method = value);
-          },
-          child: Column(
-            children: ['카드', '카카오페이', '계좌이체']
-                .map(
-                  (item) => RadioListTile<String>(
-                    value: item,
-                    selected: method == item,
-                    title: Text(item),
-                    secondary: Icon(
-                      item == '카드'
-                          ? Icons.credit_card_rounded
-                          : item == '카카오페이'
-                          ? Icons.account_balance_wallet_outlined
-                          : Icons.account_balance_outlined,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: const Color(0xffE2E6EE)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                defaultTargetPlatform == TargetPlatform.iOS
+                    ? Icons.apple_rounded
+                    : Icons.shop_outlined,
+                color: text,
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.forceTestMode ? '테스트 스토어' : storeName,
+                      style: const TextStyle(
+                        color: text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    tileColor: surface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                    const Text(
+                      '스토어 계정의 결제수단·환불정책 적용',
+                      style: TextStyle(color: mute, fontSize: 9),
                     ),
-                  ),
-                )
-                .toList(),
+                  ],
+                ),
+              ),
+              Icon(
+                storeReadyForPurchase
+                    ? Icons.check_circle_rounded
+                    : Icons.info_outline_rounded,
+                color: storeReadyForPurchase ? lime : mute,
+                size: 20,
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
@@ -567,8 +868,15 @@ class _PaymentPageState extends State<PaymentPage> {
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(56),
           ),
-          child: Text(processing ? '결제 준비 중...' : '$formattedPrice 결제하기'),
+          child: Text(processing ? '결제 준비 중...' : '$displayedPrice 결제하기'),
         ),
+        if (!widget.forceTestMode) ...[
+          const SizedBox(height: 7),
+          TextButton(
+            onPressed: processing ? null : _restorePurchases,
+            child: const Text('이전 구매 복원'),
+          ),
+        ],
       ],
     ),
   );
@@ -606,7 +914,7 @@ class PremiumAdmissionReport extends StatelessWidget {
               children: [
                 Icon(Icons.verified_rounded, color: Color(0xff168A73)),
                 SizedBox(width: 10),
-                Expanded(child: Text('테스트 결제가 완료되어 정밀 분석이 열렸습니다.')),
+                Expanded(child: Text('스토어 결제가 확인되어 정밀 분석이 열렸습니다.')),
               ],
             ),
           ),

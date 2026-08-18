@@ -670,11 +670,11 @@ class _WalletShellState extends State<_WalletShell>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1800),
     );
     _receiptReveal = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.08, 1, curve: Curves.easeOutCubic),
+      curve: const Interval(0.05, 0.78, curve: Curves.easeOutBack),
     );
   }
 
@@ -713,7 +713,7 @@ class _WalletShellState extends State<_WalletShell>
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          padding: const EdgeInsets.fromLTRB(12, 9, 14, 9),
           child: Row(
             children: [
               _ReceiptTicketAnimation(
@@ -789,29 +789,46 @@ class _ReceiptTicketAnimation extends StatelessWidget {
   Widget build(BuildContext context) => ExcludeSemantics(
     child: SizedBox(
       key: const Key('receipt-ticket-animation'),
-      width: 42,
-      height: 48,
+      width: 64,
+      height: 62,
       child: AnimatedBuilder(
         animation: reveal,
         builder: (context, _) {
-          final progress = reveal.value;
+          final progress = reveal.value.clamp(0.0, 1.0).toDouble();
           return Stack(
             clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
               Positioned(
-                top: 16,
+                top: 1,
+                child: Opacity(
+                  opacity: 0.18 + (0.20 * progress),
+                  child: Transform.scale(
+                    scale: 0.78 + (0.22 * progress),
+                    child: Container(
+                      width: 58,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        color: Color(0xffF1BD48),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 22,
                 child: ClipRect(
                   child: Align(
                     alignment: Alignment.topCenter,
-                    heightFactor: 0.30 + (0.70 * progress),
+                    heightFactor: 0.20 + (0.80 * progress),
                     child: ClipPath(
                       clipper: const _ReceiptEdgeClipper(),
                       child: Container(
                         key: const Key('receipt-ticket-paper'),
-                        width: 29,
-                        height: 31,
-                        padding: const EdgeInsets.fromLTRB(5, 7, 5, 4),
+                        width: 43,
+                        height: 40,
+                        padding: const EdgeInsets.fromLTRB(5, 8, 5, 4),
                         color: const Color(0xffFFFDF5),
                         child: Opacity(
                           opacity: progress,
@@ -819,24 +836,38 @@ class _ReceiptTicketAnimation extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Container(
-                                height: 2,
+                                height: 2.5,
                                 decoration: BoxDecoration(
                                   color: const Color(0xffE7C77E),
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
                               const SizedBox(height: 3),
-                              const Text(
-                                '+1 TICKET',
-                                maxLines: 1,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xffA66B00),
-                                  fontSize: 4.5,
-                                  height: 1,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: -0.15,
-                                ),
+                              const Column(
+                                children: [
+                                  Text(
+                                    '+1',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xff8F5700),
+                                      fontSize: 9,
+                                      height: 0.9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'TICKET',
+                                    maxLines: 1,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xffA66B00),
+                                      fontSize: 5.5,
+                                      height: 1,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.25,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -847,39 +878,67 @@ class _ReceiptTicketAnimation extends StatelessWidget {
                 ),
               ),
               Positioned(
-                top: 4 - (progress * 2),
-                child: Container(
-                  width: 37,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: const Color(0xffF4C968),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xffE7B64C)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color.fromRGBO(
-                          190,
-                          124,
-                          4,
-                          0.12 + (0.18 * progress),
-                        ),
-                        blurRadius: 7 + (5 * progress),
-                        spreadRadius: progress,
-                        offset: const Offset(0, 3),
+                top: 4 - (progress * 3),
+                child: Transform.scale(
+                  scale: 0.90 + (0.10 * progress),
+                  child: Container(
+                    width: 53,
+                    height: 31,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xffFFE49E), Color(0xffEFB640)],
                       ),
-                    ],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xffD99C20)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color.fromRGBO(
+                            190,
+                            124,
+                            4,
+                            0.16 + (0.22 * progress),
+                          ),
+                          blurRadius: 9 + (7 * progress),
+                          spreadRadius: 1 + progress,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.local_print_shop_outlined,
+                      color: Color(0xff774800),
+                      size: 19,
+                    ),
                   ),
-                  child: Icon(icon, color: const Color(0xff8F5B00), size: 14),
                 ),
               ),
               Positioned(
-                top: 22,
+                top: 29,
                 child: Container(
-                  width: 25,
-                  height: 2,
+                  width: 37,
+                  height: 3,
                   decoration: BoxDecoration(
                     color: const Color(0xff9E6500),
                     borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 3,
+                top: 0,
+                child: Transform.scale(
+                  scale: 0.82 + (0.18 * progress),
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFFF8E6),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xffD99C20)),
+                    ),
+                    child: Icon(icon, color: const Color(0xff8F5700), size: 11),
                   ),
                 ),
               ),

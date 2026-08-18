@@ -10,10 +10,39 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('다시 만나서\n반가워요.'), findsOneWidget);
+    expect(find.text('Google로 계속하기'), findsOneWidget);
     await tester.tap(find.text('로그인 없이 둘러보기'));
     await tester.pumpAndSettle();
 
     expect(find.text('나의 진학 준비'), findsOneWidget);
+  });
+
+  testWidgets('상단 알림과 마이페이지 버튼이 실제 화면을 연다', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Shell(
+          user: SessionUser(
+            name: '체험 학생',
+            email: 'guest@gachi.local',
+            isGuest: true,
+            authProvider: 'guest',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('header-notifications-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('2026 입시 인사이트가 업데이트됐어요'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('header-profile-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('체험 학생'), findsOneWidget);
+    expect(find.text('결제 및 컨설팅 내역'), findsOneWidget);
   });
 
   testWidgets('GACHI home renders', (WidgetTester tester) async {
@@ -328,7 +357,11 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       const MaterialApp(
-        home: PaymentPage(productName: 'GACHI 정밀 입시 분석', price: 49000),
+        home: PaymentPage(
+          productName: 'GACHI 정밀 입시 분석',
+          price: 49000,
+          forceTestMode: true,
+        ),
       ),
     );
 

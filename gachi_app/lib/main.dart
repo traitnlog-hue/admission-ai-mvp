@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -87,7 +91,11 @@ class Shell extends StatefulWidget {
 class _ShellState extends State<Shell> {
   int index = 0;
   List<Widget> get pages => [
-    Home(user: widget.user, onRequireLogin: widget.onLogout),
+    Home(
+      user: widget.user,
+      onRequireLogin: widget.onLogout,
+      onOpenProfile: () => setState(() => index = 4),
+    ),
     Explore(
       user: widget.user,
       onRequireLogin: widget.onLogout,
@@ -218,20 +226,73 @@ class LegacyHome extends StatelessWidget {
 }
 
 class _Top extends StatelessWidget {
-  const _Top();
+  final String initial;
+  final VoidCallback? onNotifications;
+  final VoidCallback? onProfile;
+  final bool hasUnreadNotifications;
+
+  const _Top({
+    this.initial = '지',
+    this.onNotifications,
+    this.onProfile,
+    this.hasUnreadNotifications = false,
+  });
+
   @override
   Widget build(BuildContext c) => Row(
     children: [
       const _Logo(),
       const Spacer(),
-      _IconButton(Icons.notifications_none),
+      Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _IconButton(
+            Icons.notifications_none_rounded,
+            key: const Key('header-notifications-button'),
+            tooltip: '알림',
+            onTap: onNotifications,
+          ),
+          if (hasUnreadNotifications)
+            Positioned(
+              right: 7,
+              top: 7,
+              child: Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: coral,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: surface, width: 1.5),
+                ),
+              ),
+            ),
+        ],
+      ),
       const SizedBox(width: 8),
-      const CircleAvatar(
-        radius: 18,
-        backgroundColor: lavender,
-        child: Text(
-          '지',
-          style: TextStyle(color: navy, fontWeight: FontWeight.w600),
+      Semantics(
+        button: true,
+        label: '마이페이지 열기',
+        child: Material(
+          color: lavender,
+          shape: const CircleBorder(),
+          child: InkWell(
+            key: const Key('header-profile-button'),
+            customBorder: const CircleBorder(),
+            onTap: onProfile,
+            child: SizedBox(
+              width: 38,
+              height: 38,
+              child: Center(
+                child: Text(
+                  initial,
+                  style: const TextStyle(
+                    color: navy,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     ],
@@ -273,16 +334,28 @@ class _Logo extends StatelessWidget {
 
 class _IconButton extends StatelessWidget {
   final IconData icon;
-  const _IconButton(this.icon);
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  const _IconButton(this.icon, {super.key, this.tooltip = '', this.onTap});
+
   @override
-  Widget build(BuildContext c) => Container(
-    width: 38,
-    height: 38,
-    decoration: BoxDecoration(
+  Widget build(BuildContext c) => Semantics(
+    button: true,
+    label: tooltip,
+    child: Material(
       color: surface,
       borderRadius: BorderRadius.circular(13),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(13),
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(icon, color: text, size: 20),
+        ),
+      ),
     ),
-    child: Icon(icon, color: text, size: 20),
   );
 }
 
@@ -2479,6 +2552,23 @@ class Profile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: mute, fontSize: 12),
                     ),
+                    if (user?.authProvider == 'google') ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffEEF4FF),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'Google 계정 연결됨',
+                          style: TextStyle(color: lime, fontSize: 9),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -2486,8 +2576,36 @@ class Profile extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 22),
-        const _ProfileItem(Icons.bookmark_outline, '저장한 목표 대학'),
-        const _ProfileItem(Icons.map_outlined, '나의 학습 로드맵'),
+        _ProfileItem(
+          Icons.bookmark_outline,
+          '저장한 목표 대학',
+          onTap: () => Navigator.push(
+            c,
+            MaterialPageRoute(
+              builder: (_) => const _ProfileInfoPage(
+                title: '저장한 목표 대학',
+                icon: Icons.bookmark_outline,
+                emptyTitle: '아직 저장한 목표 대학이 없어요',
+                emptyBody: '대입전략에서 관심 대학을 선택하면 이곳에서 한 번에 확인할 수 있어요.',
+              ),
+            ),
+          ),
+        ),
+        _ProfileItem(
+          Icons.map_outlined,
+          '나의 학습 로드맵',
+          onTap: () => Navigator.push(
+            c,
+            MaterialPageRoute(
+              builder: (_) => const _ProfileInfoPage(
+                title: '나의 학습 로드맵',
+                icon: Icons.map_outlined,
+                emptyTitle: '목표를 추가해 로드맵을 시작하세요',
+                emptyBody: '홈의 목표 추가에서 기간·주간 시간·약점을 입력하면 실행 로드맵이 만들어집니다.',
+              ),
+            ),
+          ),
+        ),
         _ProfileItem(
           Icons.workspace_premium_outlined,
           '유료 정밀 입시 분석',
@@ -2496,19 +2614,225 @@ class Profile extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const PremiumAdmissionOffer()),
           ),
         ),
-        const _ProfileItem(Icons.receipt_long_outlined, '결제 및 컨설팅 내역'),
-        const _ProfileItem(Icons.settings_outlined, '설정'),
+        _ProfileItem(
+          Icons.receipt_long_outlined,
+          '결제 및 컨설팅 내역',
+          onTap: () => Navigator.push(
+            c,
+            MaterialPageRoute(builder: (_) => const PurchaseHistoryPage()),
+          ),
+        ),
+        _ProfileItem(
+          Icons.settings_outlined,
+          '설정',
+          onTap: () => Navigator.push(
+            c,
+            MaterialPageRoute(builder: (_) => const GachiSettingsPage()),
+          ),
+        ),
         if (onLogout != null) ...[
           const SizedBox(height: 8),
           TextButton.icon(
             onPressed: onLogout,
             icon: const Icon(Icons.logout_rounded),
-            label: Text(user?.isGuest == true ? '체험 모드 종료' : '로그아웃'),
+            label: Text(
+              user?.isGuest == true
+                  ? '체험 모드 종료'
+                  : user?.authProvider == 'google'
+                  ? 'Google 로그아웃'
+                  : '로그아웃',
+            ),
           ),
         ],
       ],
     );
   }
+}
+
+class _ProfileInfoPage extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final String emptyTitle;
+  final String emptyBody;
+
+  const _ProfileInfoPage({
+    required this.title,
+    required this.icon,
+    required this.emptyTitle,
+    required this.emptyBody,
+  });
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: mist,
+    appBar: AppBar(backgroundColor: mist, title: Text(title)),
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 66,
+              height: 66,
+              decoration: const BoxDecoration(
+                color: lavender,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: lime, size: 29),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              emptyTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: text,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              emptyBody,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: mute, fontSize: 11, height: 1.6),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class PurchaseHistoryPage extends StatefulWidget {
+  const PurchaseHistoryPage({super.key});
+
+  @override
+  State<PurchaseHistoryPage> createState() => _PurchaseHistoryPageState();
+}
+
+class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
+  String? orderId;
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((preferences) {
+      if (mounted) {
+        setState(
+          () => orderId = preferences.getString('gachi.purchase.last_order'),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: mist,
+    appBar: AppBar(backgroundColor: mist, title: const Text('결제 및 컨설팅 내역')),
+    body: Padding(
+      padding: const EdgeInsets.all(20),
+      child: orderId == null
+          ? const _ProfileEmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: '아직 결제 내역이 없어요',
+              body: '스토어에서 정밀 입시 분석을 구매하면 주문 정보가 표시됩니다.',
+            )
+          : Container(
+              padding: const EdgeInsets.all(17),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_rounded, color: Color(0xff168A73)),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'GACHI 정밀 입시 분석',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          '주문번호 $orderId',
+                          style: const TextStyle(color: mute, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    ),
+  );
+}
+
+class GachiSettingsPage extends StatefulWidget {
+  const GachiSettingsPage({super.key});
+
+  @override
+  State<GachiSettingsPage> createState() => _GachiSettingsPageState();
+}
+
+class _GachiSettingsPageState extends State<GachiSettingsPage> {
+  bool notificationsEnabled = true;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: mist,
+    appBar: AppBar(backgroundColor: mist, title: const Text('설정')),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        SwitchListTile(
+          value: notificationsEnabled,
+          onChanged: (value) => setState(() => notificationsEnabled = value),
+          tileColor: surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('학습·입시 알림'),
+          subtitle: const Text('코치 플랜과 입시 정보 업데이트를 알려드려요.'),
+        ),
+        const SizedBox(height: 9),
+        const _ProfileItem(Icons.shield_outlined, '개인정보 처리방침'),
+        const _ProfileItem(Icons.description_outlined, '서비스 이용약관'),
+      ],
+    ),
+  );
+}
+
+class _ProfileEmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String body;
+
+  const _ProfileEmptyState({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: lime, size: 42),
+        const SizedBox(height: 13),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Text(
+          body,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: mute, fontSize: 11, height: 1.5),
+        ),
+      ],
+    ),
+  );
 }
 
 class _ProfileItem extends StatelessWidget {
@@ -2518,20 +2842,21 @@ class _ProfileItem extends StatelessWidget {
 
   const _ProfileItem(this.icon, this.title, {this.onTap});
   @override
-  Widget build(BuildContext c) => Container(
-    margin: const EdgeInsets.only(bottom: 8),
-    decoration: BoxDecoration(
+  Widget build(BuildContext c) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Material(
       color: surface,
       borderRadius: BorderRadius.circular(18),
-    ),
-    child: ListTile(
-      onTap: onTap,
-      leading: Icon(icon, color: lime),
-      title: Text(
-        title,
-        style: const TextStyle(color: text, fontWeight: FontWeight.w600),
+      child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        leading: Icon(icon, color: lime),
+        title: Text(
+          title,
+          style: const TextStyle(color: text, fontWeight: FontWeight.w600),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: mute),
       ),
-      trailing: const Icon(Icons.chevron_right, color: mute),
     ),
   );
 }

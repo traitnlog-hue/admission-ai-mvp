@@ -3,8 +3,9 @@ part of 'main.dart';
 class Home extends StatefulWidget {
   final SessionUser? user;
   final VoidCallback? onRequireLogin;
+  final VoidCallback? onOpenProfile;
 
-  const Home({super.key, this.user, this.onRequireLogin});
+  const Home({super.key, this.user, this.onRequireLogin, this.onOpenProfile});
 
   @override
   State<Home> createState() => _HomeState();
@@ -14,10 +15,12 @@ class _HomeState extends State<Home> {
   static const _goalsKey = 'gachi.study.goals';
   static const _completedKey = 'gachi.study.completed';
   static const _profileKey = 'gachi.student.profile';
+  static const _notificationsReadKey = 'gachi.notifications.read';
   AcademyStudentProfile? academyProfile;
   final List<StudyGoal> goals = [];
   final Set<String> completedTaskIds = {};
   String insightGrade = '고3';
+  bool hasUnreadNotifications = true;
 
   List<StudyTask> get weeklyTasks => goals.expand(buildWeeklyTasks).toList();
 
@@ -32,6 +35,8 @@ class _HomeState extends State<Home> {
     final encodedGoals = preferences.getString(_goalsKey);
     final encodedProfile = preferences.getString(_profileKey);
     final savedCompleted = preferences.getStringList(_completedKey) ?? [];
+    final notificationsRead =
+        preferences.getBool(_notificationsReadKey) ?? false;
     if (!mounted) return;
     setState(() {
       if (encodedGoals != null) {
@@ -48,6 +53,7 @@ class _HomeState extends State<Home> {
       completedTaskIds
         ..clear()
         ..addAll(savedCompleted);
+      hasUnreadNotifications = !notificationsRead;
       if (encodedProfile != null) {
         academyProfile = AcademyStudentProfile.fromJson(
           Map<String, dynamic>.from(jsonDecode(encodedProfile) as Map),
@@ -100,6 +106,16 @@ class _HomeState extends State<Home> {
     }
   }
 
+  Future<void> _openNotifications() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationCenterPage()),
+    );
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_notificationsReadKey, true);
+    if (mounted) setState(() => hasUnreadNotifications = false);
+  }
+
   void _toggleTask(String id, bool completed) {
     setState(
       () => completed ? completedTaskIds.add(id) : completedTaskIds.remove(id),
@@ -117,7 +133,12 @@ class _HomeState extends State<Home> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
       children: [
-        const _Top(),
+        _Top(
+          initial: _profileInitial(widget.user),
+          onNotifications: _openNotifications,
+          onProfile: widget.onOpenProfile,
+          hasUnreadNotifications: hasUnreadNotifications,
+        ),
         const SizedBox(height: 24),
         Text(
           academyProfile == null
@@ -145,13 +166,13 @@ class _HomeState extends State<Home> {
           onQuickCheck: () => showQuickEscapeDiagnosis(context),
         ),
         const SizedBox(height: 12),
+        _StudentProfileCard(profile: academyProfile, onEdit: _editProfile),
+        const SizedBox(height: 12),
         TrustWalletCard(
           user: widget.user,
           onRequireLogin: widget.onRequireLogin,
         ),
-        const SizedBox(height: 12),
-        _StudentProfileCard(profile: academyProfile, onEdit: _editProfile),
-        const SizedBox(height: 15),
+        const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
@@ -271,6 +292,127 @@ class _HomeState extends State<Home> {
       ],
     );
   }
+}
+
+String _profileInitial(SessionUser? user) {
+  final name = user?.name.trim() ?? '';
+  return name.isEmpty ? 'G' : name.substring(0, 1);
+}
+
+class NotificationCenterPage extends StatelessWidget {
+  const NotificationCenterPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: mist,
+    appBar: AppBar(
+      backgroundColor: mist,
+      foregroundColor: text,
+      title: const Text('알림'),
+      actions: [
+        TextButton(
+          onPressed: () => ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('모든 알림을 읽음 처리했습니다.'))),
+          child: const Text('모두 읽음'),
+        ),
+      ],
+    ),
+    body: ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      children: const [
+        _NotificationCard(
+          icon: Icons.auto_awesome_rounded,
+          title: '이번 주 코치 플랜을 확인해 보세요',
+          body: '목표를 추가하면 요일별 학습·오답·회고 과제가 자동으로 구성됩니다.',
+          time: '오늘',
+          highlighted: true,
+        ),
+        _NotificationCard(
+          icon: Icons.receipt_long_rounded,
+          title: '영수증 1건으로 진단 티켓 1매',
+          body: '실명 회원이 영수증과 후기를 인증하면 대입전략 또는 고교탐색에 사용할 수 있어요.',
+          time: '오늘',
+        ),
+        _NotificationCard(
+          icon: Icons.school_outlined,
+          title: '2026 입시 인사이트가 업데이트됐어요',
+          body: '현재 학년을 기준으로 교육청·대학 공식 자료의 확인 포인트를 정리했습니다.',
+          time: '어제',
+        ),
+      ],
+    ),
+  );
+}
+
+class _NotificationCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String body;
+  final String time;
+  final bool highlighted;
+
+  const _NotificationCard({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.time,
+    this.highlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(15),
+    decoration: BoxDecoration(
+      color: highlighted ? const Color(0xffEDF4FF) : surface,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(
+        color: highlighted ? const Color(0xffC8DBFF) : const Color(0xffE7EAF0),
+      ),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: highlighted ? lime : lavender,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: highlighted ? Colors.white : lime, size: 19),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Text(time, style: const TextStyle(color: mute, fontSize: 9)),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Text(
+                body,
+                style: const TextStyle(color: mute, fontSize: 10, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _GoalSnapshot extends StatelessWidget {
