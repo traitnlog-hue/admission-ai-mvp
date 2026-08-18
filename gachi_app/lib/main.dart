@@ -82,15 +82,15 @@ class _ShellState extends State<Shell> {
         ),
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
-            iconTheme: MaterialStateProperty.resolveWith(
+            iconTheme: WidgetStateProperty.resolveWith(
               (states) => IconThemeData(
-                color: states.contains(MaterialState.selected)
+                color: states.contains(WidgetState.selected)
                     ? Colors.white
                     : const Color(0xffB9C3D5),
                 size: 25,
               ),
             ),
-            labelTextStyle: MaterialStatePropertyAll(
+            labelTextStyle: WidgetStatePropertyAll(
               const TextStyle(
                 color: Colors.white,
                 fontSize: 10,
@@ -711,6 +711,7 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
       final response = await http.post(Uri.parse('http://127.0.0.1:8000/api/academy-recommendations'), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'region': profile.region, 'grade': profile.grade, 'subjects': profile.subjects, 'level': profile.level})).timeout(const Duration(seconds: 4));
       if (response.statusCode == 200) matches = (jsonDecode(response.body)['items'] as List).cast<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
     } catch (_) {}
+    if (!mounted) return;
     final saved = await Navigator.push<AcademyStudentProfile>(context, MaterialPageRoute(builder: (_) => AcademyMatchResult(profile: profile, matches: matches)));
     if (saved != null && mounted) Navigator.pop(context, saved);
   }
@@ -721,11 +722,11 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
       const Text('학생 정보를 알려주세요.', style: TextStyle(color: text, fontSize: 26, fontWeight: FontWeight.w900)),
       const SizedBox(height: 5), const Text('통학권과 학습 상황에 맞는 추천 기준을 만들어요.', style: TextStyle(color: mute, fontSize: 12)), const SizedBox(height: 22),
       const _FormLabel('이름'), TextField(controller: name, decoration: _inputDecoration(hint: '예: 이지희')), const SizedBox(height: 17),
-      const _FormLabel('지역'), DropdownButtonFormField<String>(value: region, decoration: _inputDecoration(), items: regions.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => region = value!)), const SizedBox(height: 17),
+      const _FormLabel('지역'), DropdownButtonFormField<String>(initialValue: region, decoration: _inputDecoration(), items: regions.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => region = value!)), const SizedBox(height: 17),
       const _FormLabel('학교'), TextField(controller: school, decoration: _inputDecoration(hint: '예: ○○고등학교')), const SizedBox(height: 17),
-      const _FormLabel('학년'), DropdownButtonFormField<String>(value: grade, decoration: _inputDecoration(), items: grades.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => grade = value!)), const SizedBox(height: 17),
+      const _FormLabel('학년'), DropdownButtonFormField<String>(initialValue: grade, decoration: _inputDecoration(), items: grades.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => grade = value!)), const SizedBox(height: 17),
       const _FormLabel('관심 과목 · 필요한 영역'), Wrap(spacing: 7, runSpacing: 7, children: subjectOptions.map((item) => FilterChip(label: Text(item), selected: subjects.contains(item), selectedColor: lavender, checkmarkColor: lime, labelStyle: TextStyle(fontSize: 12, color: subjects.contains(item) ? lime : text, fontWeight: FontWeight.w700), onSelected: (selected) => setState(() => selected ? subjects.add(item) : subjects.remove(item)))).toList()), const SizedBox(height: 17),
-      const _FormLabel('현재 학습 수준'), ...levels.map((item) => RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, value: item, groupValue: level, activeColor: lime, title: Text(item, style: const TextStyle(fontSize: 12, color: text)), onChanged: (value) => setState(() => level = value!))),
+      const _FormLabel('현재 학습 수준'), RadioGroup<String>(groupValue: level, onChanged: (value) => setState(() => level = value!), child: Column(children: levels.map((item) => RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, value: item, activeColor: lime, title: Text(item, style: const TextStyle(fontSize: 12, color: text)))).toList())),
       const SizedBox(height: 10), const _FormLabel('찾는 학원 조건'), TextField(controller: academyCondition, maxLines: 2, decoration: _inputDecoration(hint: '예: 소수정예, 주말 수업, 내신 대비')), 
       const SizedBox(height: 15), FilledButton(onPressed: next, style: FilledButton.styleFrom(backgroundColor: lime, foregroundColor: navy, minimumSize: const Size.fromHeight(56)), child: const Text('맞춤 학원 추천 보기', style: TextStyle(fontWeight: FontWeight.w800))),
     ]),
@@ -742,8 +743,8 @@ class AcademyMatchResult extends StatelessWidget {
   @override Widget build(BuildContext c) {
     final subject = profile.subjects.first;
     final options = matches.isEmpty ? [
-      ('통학 중심 ${subject} 전문반', '${profile.region} 기준 30분 이내 통학권 · ${profile.grade} ${profile.level}', '주 2~3회 · 레벨 진단 후 반 배정'),
-      ('${subject} 심화·내신 관리반', '${profile.school} 재학생의 내신 일정에 맞춘 소수정예 수업', '학교별 시험범위·오답 관리 확인'),
+      ('통학 중심 $subject 전문반', '${profile.region} 기준 30분 이내 통학권 · ${profile.grade} ${profile.level}', '주 2~3회 · 레벨 진단 후 반 배정'),
+      ('$subject 심화·내신 관리반', '${profile.school} 재학생의 내신 일정에 맞춘 소수정예 수업', '학교별 시험범위·오답 관리 확인'),
       ('진학 전략 통합 컨설팅', '학생부·모의고사·희망 전공을 함께 보는 입시 관리', '상담 교사의 입시 데이터 출처 확인'),
     ] : matches.take(3).map((item) => (item['name'] as String, '${item['region']} · ${item['address']}', '공식 교육청 공개정보 · 적합도 ${item['score']}점')).toList();
     return Scaffold(backgroundColor: mist, appBar: AppBar(backgroundColor: mist, title: const Text('맞춤 학원 추천', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))), body: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 28), children: [
@@ -1122,9 +1123,9 @@ class _CoachAdmissionIntakeState extends State<CoachAdmissionIntake> {
   @override Widget build(BuildContext c) => Scaffold(backgroundColor: mist, appBar: AppBar(backgroundColor: mist, title: const Text('COACH+ 입시 전략 진단', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))), body: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 28), children: [
     const Text('현재 기록을 입력해 주세요.', style: TextStyle(color: text, fontSize: 25, fontWeight: FontWeight.w900)), const SizedBox(height: 5), const Text('공식 합격선이 아닌 개인 전략 진단 결과입니다.', style: TextStyle(color: mute, fontSize: 12)), const SizedBox(height: 20),
     const Text('희망 대학교', style: TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 8),
-    DropdownButtonFormField<String>(value: university, decoration: _inputDecoration(), items: majorsByUniversity.keys.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() { university = value!; major = majorsByUniversity[value]!.first; })), const SizedBox(height: 17),
+    DropdownButtonFormField<String>(initialValue: university, decoration: _inputDecoration(), items: majorsByUniversity.keys.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() { university = value!; major = majorsByUniversity[value]!.first; })), const SizedBox(height: 17),
     const Text('희망 전공', style: TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 8),
-    DropdownButtonFormField<String>(value: major, decoration: _inputDecoration(), items: majorsByUniversity[university]!.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => major = value!)), const SizedBox(height: 5),
+    DropdownButtonFormField<String>(key: ValueKey(university), initialValue: major, decoration: _inputDecoration(), items: majorsByUniversity[university]!.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => major = value!)), const SizedBox(height: 5),
     Text('$university $major 기준으로 전공 핵심교과와 학생부 연결성을 진단합니다.', style: const TextStyle(color: mute, fontSize: 10)), const SizedBox(height: 17),
     const Text('내신 성적', style: TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 9), _GradeRow(labels: const ['국어','수학','영어','사회','과학'], values: school, onChanged: () => setState(() {})), const SizedBox(height: 17),
     const Text('모의고사 성적', style: TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 9), _GradeRow(labels: const ['국어','수학','영어','탐구'], values: mock, onChanged: () => setState(() {})), const SizedBox(height: 17),
@@ -1281,12 +1282,13 @@ class _LevelTestState extends State<LevelTest> {
   @override
   Widget build(BuildContext c) {
     if (q == 0) return _buildSetup();
-    if (q == 4)
+    if (q == 4) {
       return _Result(
         '$grade $subject LEVEL ${answers.where((v) => v).length + 4}',
-        '${subject}의 현재 개념 이해도를 확인했어요.\n다음 진단에서 약한 유형을 더 정확히 찾아볼까요?',
+        '$subject의 현재 개념 이해도를 확인했어요.\n다음 진단에서 약한 유형을 더 정확히 찾아볼까요?',
         lime,
       );
+    }
     final t = questionsBySubject[subject]![q - 1];
     return Scaffold(
       backgroundColor: mist,
@@ -1370,7 +1372,7 @@ class _LevelTestState extends State<LevelTest> {
             const Text('학년', style: TextStyle(color: text, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: grade,
+              initialValue: grade,
               isExpanded: true,
               decoration: const InputDecoration(
                 filled: true,
