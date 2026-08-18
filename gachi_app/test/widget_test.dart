@@ -4,10 +4,26 @@ import 'package:route27_mobile/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('GACHI home renders', (WidgetTester tester) async {
+  testWidgets('login gate supports guest entry', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const GachiApp());
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('다시 만나서\n반가워요.'), findsOneWidget);
+    await tester.tap(find.text('로그인 없이 둘러보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('나의 진학 준비'), findsOneWidget);
+  });
+
+  testWidgets('GACHI home renders', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'gachi.auth.signed_in': true,
+      'gachi.auth.name': '테스트 학생',
+      'gachi.auth.email': 'student@example.com',
+    });
+    await tester.pumpWidget(const GachiApp());
+    await tester.pumpAndSettle();
 
     expect(find.text('나의 진학 준비'), findsOneWidget);
     expect(find.text('무료 진단'), findsOneWidget);
@@ -46,6 +62,13 @@ void main() {
     expect(find.text('GACHI 입시 전략 진단'), findsOneWidget);
     expect(find.text('현재 기록을 입력해 주세요.'), findsOneWidget);
     expect(tester.takeException(), isNull);
+
+    await tester.scrollUntilVisible(find.text('무료 입시 분석 시작'), 250);
+    await tester.tap(find.text('무료 입시 분석 시작'));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+
+    expect(find.text('무료 분석 결과'), findsOneWidget);
   });
 
   testWidgets('high school finder creates a recommendation', (
@@ -58,5 +81,76 @@ void main() {
 
     expect(find.text('추천 고교 환경'), findsOneWidget);
     expect(find.textContaining('일반고'), findsOneWidget);
+  });
+
+  testWidgets('academy recommendations include Kakao Map actions', (
+    WidgetTester tester,
+  ) async {
+    const profile = AcademyStudentProfile(
+      name: '테스트 학생',
+      region: '서울 강남구',
+      school: '테스트고',
+      grade: '고2',
+      subjects: ['수학'],
+      level: '개념은 안정적, 심화 보완 필요',
+      academyCondition: '통학 30분 이내',
+    );
+    await tester.pumpWidget(
+      const MaterialApp(home: AcademyMatchResult(profile: profile)),
+    );
+
+    expect(find.text('추천 학원 위치 확인'), findsOneWidget);
+    expect(find.text('카카오맵'), findsOneWidget);
+    expect(find.text('카카오맵에서 위치 보기'), findsWidgets);
+  });
+
+  testWidgets('free admission result connects to premium checkout', (
+    WidgetTester tester,
+  ) async {
+    final result = <String, dynamic>{
+      'major': '컴퓨터공학부',
+      'primary_strategy': '정시 중심 전략',
+      'primary_reason': '모의고사 경쟁력이 안정적입니다.',
+      'secondary_strategy': '학생부종합 병행 전략',
+      'secondary_reason': '탐구 활동을 보완하세요.',
+      'scores': [
+        {'label': '학업역량', 'value': 82},
+        {'label': '수능역량', 'value': 86},
+      ],
+      'risks': ['수능최저를 확인하세요.'],
+      'action_plan': '이번 주 오답을 정리하세요.',
+      'offline': true,
+    };
+    await tester.pumpWidget(
+      MaterialApp(home: CoachAdmissionResult(data: result)),
+    );
+
+    await tester.scrollUntilVisible(find.text('유료 정밀 분석 비교하기'), 250);
+    await tester.tap(find.text('유료 정밀 분석 비교하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('GACHI ADMISSION PRO'), findsOneWidget);
+    expect(find.text('결제하고 정밀 분석 시작'), findsOneWidget);
+  });
+
+  testWidgets('test checkout unlocks premium report', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PaymentPage(productName: 'GACHI 정밀 입시 분석', price: 49000),
+      ),
+    );
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.tap(find.text('49,000원 결제하기'));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('테스트 결제 확인'), findsOneWidget);
+
+    await tester.tap(find.text('테스트 결제 완료'));
+    await tester.pumpAndSettle();
+    expect(find.text('정밀 분석 리포트'), findsOneWidget);
+    expect(find.textContaining('4주 실행 로드맵'), findsOneWidget);
   });
 }

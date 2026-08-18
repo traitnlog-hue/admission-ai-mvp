@@ -10,6 +10,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   static const _goalsKey = 'gachi.study.goals';
   static const _completedKey = 'gachi.study.completed';
+  static const _profileKey = 'gachi.student.profile';
   AcademyStudentProfile? academyProfile;
   final List<StudyGoal> goals = [];
   final Set<String> completedTaskIds = {};
@@ -26,6 +27,7 @@ class _HomeState extends State<Home> {
   Future<void> _restorePlan() async {
     final preferences = await SharedPreferences.getInstance();
     final encodedGoals = preferences.getString(_goalsKey);
+    final encodedProfile = preferences.getString(_profileKey);
     final savedCompleted = preferences.getStringList(_completedKey) ?? [];
     if (!mounted) return;
     setState(() {
@@ -43,6 +45,12 @@ class _HomeState extends State<Home> {
       completedTaskIds
         ..clear()
         ..addAll(savedCompleted);
+      if (encodedProfile != null) {
+        academyProfile = AcademyStudentProfile.fromJson(
+          Map<String, dynamic>.from(jsonDecode(encodedProfile) as Map),
+        );
+        insightGrade = academyProfile!.grade;
+      }
     });
   }
 
@@ -53,6 +61,13 @@ class _HomeState extends State<Home> {
       jsonEncode(goals.map((goal) => goal.toJson()).toList()),
     );
     await preferences.setStringList(_completedKey, completedTaskIds.toList());
+  }
+
+  Future<void> _saveProfile() async {
+    final profile = academyProfile;
+    if (profile == null) return;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_profileKey, jsonEncode(profile.toJson()));
   }
 
   Future<void> _editProfile() async {
@@ -67,6 +82,7 @@ class _HomeState extends State<Home> {
         academyProfile = profile;
         insightGrade = profile.grade;
       });
+      await _saveProfile();
     }
   }
 

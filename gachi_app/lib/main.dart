@@ -10,6 +10,8 @@ import 'level_test_data.dart';
 import 'study_plan_models.dart';
 
 part 'home_experience.dart';
+part 'auth_experience.dart';
+part 'commerce_experience.dart';
 part 'explore_experience.dart';
 part 'level_test_experience.dart';
 
@@ -65,12 +67,15 @@ class GachiApp extends StatelessWidget {
         brightness: Brightness.light,
       ),
     ),
-    home: const Shell(),
+    home: const AuthGate(),
   );
 }
 
 class Shell extends StatefulWidget {
-  const Shell({super.key});
+  final SessionUser? user;
+  final VoidCallback? onLogout;
+
+  const Shell({super.key, this.user, this.onLogout});
   @override
   State<Shell> createState() => _ShellState();
 }
@@ -82,7 +87,7 @@ class _ShellState extends State<Shell> {
     Explore(onOpenCoach: () => setState(() => index = 3)),
     const Community(),
     const Coach(),
-    const Profile(),
+    Profile(user: widget.user, onLogout: widget.onLogout),
   ];
   @override
   Widget build(BuildContext c) => Scaffold(
@@ -724,6 +729,27 @@ class AcademyStudentProfile {
     required this.level,
     required this.academyCondition,
   });
+
+  Map<String, Object> toJson() => {
+    'name': name,
+    'region': region,
+    'school': school,
+    'grade': grade,
+    'subjects': subjects,
+    'level': level,
+    'academyCondition': academyCondition,
+  };
+
+  factory AcademyStudentProfile.fromJson(Map<String, dynamic> json) =>
+      AcademyStudentProfile(
+        name: json['name'] as String,
+        region: json['region'] as String,
+        school: json['school'] as String,
+        grade: json['grade'] as String,
+        subjects: (json['subjects'] as List).cast<String>(),
+        level: json['level'] as String,
+        academyCondition: json['academyCondition'] as String,
+      );
 }
 
 class _StudentProfileCard extends StatelessWidget {
@@ -1165,16 +1191,19 @@ class AcademyMatchResult extends StatelessWidget {
               '통학 중심 $subject 전문반',
               '${profile.region} 기준 30분 이내 통학권 · ${profile.grade} ${profile.level}',
               '주 2~3회 · 레벨 진단 후 반 배정',
+              '${profile.region} $subject 학원',
             ),
             (
               '$subject 심화·내신 관리반',
               '${profile.school} 재학생의 내신 일정에 맞춘 소수정예 수업',
               '학교별 시험범위·오답 관리 확인',
+              '${profile.region} $subject 내신 학원',
             ),
             (
               '진학 전략 통합 컨설팅',
               '학생부·모의고사·희망 전공을 함께 보는 입시 관리',
               '상담 교사의 입시 데이터 출처 확인',
+              '${profile.region} 입시 컨설팅',
             ),
           ]
         : matches
@@ -1184,6 +1213,7 @@ class AcademyMatchResult extends StatelessWidget {
                   item['name'] as String,
                   '${item['region']} · ${item['address']}',
                   '공식 교육청 공개정보 · 적합도 ${item['score']}점',
+                  '${item['name']} ${item['address']}',
                 ),
               )
               .toList();
@@ -1229,12 +1259,18 @@ class AcademyMatchResult extends StatelessWidget {
                 .toList(),
           ),
           const SizedBox(height: 17),
+          KakaoMapPanel(
+            query: '${profile.region} $subject 학원',
+            placeCount: options.length,
+          ),
+          const SizedBox(height: 17),
           ...options.asMap().entries.map(
             (entry) => _AcademyOption(
               rank: entry.key + 1,
               title: entry.value.$1,
               body: entry.value.$2,
               check: entry.value.$3,
+              mapQuery: entry.value.$4,
             ),
           ),
           const SizedBox(height: 10),
@@ -1276,12 +1312,13 @@ class AcademyMatchResult extends StatelessWidget {
 
 class _AcademyOption extends StatelessWidget {
   final int rank;
-  final String title, body, check;
+  final String title, body, check, mapQuery;
   const _AcademyOption({
     required this.rank,
     required this.title,
     required this.body,
     required this.check,
+    required this.mapQuery,
   });
   @override
   Widget build(BuildContext c) => Container(
@@ -1333,6 +1370,17 @@ class _AcademyOption extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => openKakaoMapSearch(c, mapQuery),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xff3B3526),
+            side: const BorderSide(color: Color(0xffE6D98A)),
+            minimumSize: const Size.fromHeight(42),
+          ),
+          icon: const Icon(Icons.location_on_outlined, size: 17),
+          label: const Text('카카오맵에서 위치 보기'),
         ),
       ],
     ),
@@ -1820,6 +1868,12 @@ class _CoachAdmissionIntakeState extends State<CoachAdmissionIntake> {
 
   Future<void> submit() async {
     setState(() => loading = true);
+    for (var index = 0; index < school.length; index++) {
+      school[index] = _normalizeGrade(school[index]);
+    }
+    for (var index = 0; index < mock.length; index++) {
+      mock[index] = _normalizeGrade(mock[index]);
+    }
     final body = {
       'admission_year': 2027,
       'grade': 2,
@@ -1906,6 +1960,21 @@ class _CoachAdmissionIntakeState extends State<CoachAdmissionIntake> {
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            decoration: BoxDecoration(
+              color: lavender,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              '무료 입시 분석',
+              style: TextStyle(color: lime, fontSize: 10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
         const Text(
           '현재 기록을 입력해 주세요.',
           style: TextStyle(
@@ -1916,7 +1985,7 @@ class _CoachAdmissionIntakeState extends State<CoachAdmissionIntake> {
         ),
         const SizedBox(height: 5),
         const Text(
-          '공식 합격선이 아닌 개인 전략 진단 결과입니다.',
+          '결제 없이 핵심 전략과 이번 주 보완 과제를 확인합니다.',
           style: TextStyle(color: mute, fontSize: 12),
         ),
         const SizedBox(height: 20),
@@ -1998,7 +2067,7 @@ class _CoachAdmissionIntakeState extends State<CoachAdmissionIntake> {
             minimumSize: const Size.fromHeight(56),
           ),
           child: Text(
-            loading ? '분석 중...' : '맞춤 전략 분석 시작',
+            loading ? '분석 중...' : '무료 입시 분석 시작',
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
@@ -2051,7 +2120,7 @@ class _GradeRow extends StatelessWidget {
               ),
               DropdownButton<double>(
                 isExpanded: true,
-                value: values[i],
+                value: _normalizeGrade(values[i]),
                 items: List.generate(17, (x) {
                   final value = 1 + x * .5;
                   return DropdownMenuItem(
@@ -2074,6 +2143,9 @@ class _GradeRow extends StatelessWidget {
   );
 }
 
+double _normalizeGrade(double value) =>
+    ((value * 2).round() / 2).clamp(1.0, 9.0).toDouble();
+
 class CoachAdmissionResult extends StatelessWidget {
   final Map<String, dynamic> data;
   const CoachAdmissionResult({super.key, required this.data});
@@ -2093,6 +2165,21 @@ class CoachAdmissionResult extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
         children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: lavender,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                '무료 분석 결과',
+                style: TextStyle(color: lime, fontSize: 10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Text(
             '${data['major']} 지원 전략',
             style: const TextStyle(
@@ -2190,6 +2277,44 @@ class CoachAdmissionResult extends StatelessWidget {
                     fontSize: 13,
                     height: 1.55,
                   ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: lavender,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '더 구체적인 지원 전략이 필요하신가요?',
+                  style: TextStyle(color: text, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  '대학·전형별 GAP, 학생부 보완 항목과 4주 실행 로드맵을 정밀 분석에서 이어보세요.',
+                  style: TextStyle(color: mute, fontSize: 11, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: () => Navigator.push(
+                    c,
+                    MaterialPageRoute(
+                      builder: (_) => PremiumAdmissionOffer(freeResult: data),
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: lime,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  icon: const Icon(Icons.workspace_premium_outlined, size: 18),
+                  label: const Text('유료 정밀 분석 비교하기'),
                 ),
               ],
             ),
@@ -2292,67 +2417,90 @@ class _ScoreCard extends StatelessWidget {
 }
 
 class Profile extends StatelessWidget {
-  const Profile({super.key});
+  final SessionUser? user;
+  final VoidCallback? onLogout;
+
+  const Profile({super.key, this.user, this.onLogout});
   @override
-  Widget build(BuildContext c) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
-    children: [
-      const _Logo(),
-      const SizedBox(height: 30),
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(25),
-        ),
-        child: const Row(
-          children: [
-            CircleAvatar(
-              radius: 29,
-              backgroundColor: lavender,
-              child: Text(
-                '지',
-                style: TextStyle(
-                  color: navy,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
+  Widget build(BuildContext c) {
+    final displayName = user?.name ?? 'GACHI 학생';
+    final email = user?.isGuest == true
+        ? '체험 모드'
+        : (user?.email ?? '로그인 정보 없음');
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
+      children: [
+        const _Logo(),
+        const SizedBox(height: 30),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 29,
+                backgroundColor: lavender,
+                child: Icon(Icons.person_outline_rounded, color: lime),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        color: text,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      email,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: mute, fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '이지희',
-                  style: TextStyle(
-                    color: text,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '고2 · 2027 대입',
-                  style: TextStyle(color: mute, fontSize: 12),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      const SizedBox(height: 22),
-      const _ProfileItem(Icons.bookmark_outline, '저장한 목표 대학'),
-      const _ProfileItem(Icons.map_outlined, '나의 학습 로드맵'),
-      const _ProfileItem(Icons.receipt_long_outlined, '결제 및 컨설팅 내역'),
-      const _ProfileItem(Icons.settings_outlined, '설정'),
-    ],
-  );
+        const SizedBox(height: 22),
+        const _ProfileItem(Icons.bookmark_outline, '저장한 목표 대학'),
+        const _ProfileItem(Icons.map_outlined, '나의 학습 로드맵'),
+        _ProfileItem(
+          Icons.workspace_premium_outlined,
+          '유료 정밀 입시 분석',
+          onTap: () => Navigator.push(
+            c,
+            MaterialPageRoute(builder: (_) => const PremiumAdmissionOffer()),
+          ),
+        ),
+        const _ProfileItem(Icons.receipt_long_outlined, '결제 및 컨설팅 내역'),
+        const _ProfileItem(Icons.settings_outlined, '설정'),
+        if (onLogout != null) ...[
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: onLogout,
+            icon: const Icon(Icons.logout_rounded),
+            label: Text(user?.isGuest == true ? '체험 모드 종료' : '로그아웃'),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _ProfileItem extends StatelessWidget {
   final IconData icon;
   final String title;
-  const _ProfileItem(this.icon, this.title);
+  final VoidCallback? onTap;
+
+  const _ProfileItem(this.icon, this.title, {this.onTap});
   @override
   Widget build(BuildContext c) => Container(
     margin: const EdgeInsets.only(bottom: 8),
@@ -2361,6 +2509,7 @@ class _ProfileItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
     ),
     child: ListTile(
+      onTap: onTap,
       leading: Icon(icon, color: lime),
       title: Text(
         title,
