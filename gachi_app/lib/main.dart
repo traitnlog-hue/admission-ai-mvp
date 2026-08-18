@@ -2,6 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+
+import 'insight_data.dart';
+import 'level_test_data.dart';
+import 'study_plan_models.dart';
+
+part 'home_experience.dart';
+part 'level_test_experience.dart';
 
 const navy = Color(0xff101114),
     surface = Color(0xffFFFFFF),
@@ -501,13 +509,13 @@ class _Discover extends StatelessWidget {
   );
 }
 
-class Home extends StatefulWidget {
-  const Home({super.key});
+class LegacyStudentHome extends StatefulWidget {
+  const LegacyStudentHome({super.key});
   @override
-  State<Home> createState() => _HomeState();
+  State<LegacyStudentHome> createState() => _LegacyStudentHomeState();
 }
 
-class _HomeState extends State<Home> {
+class _LegacyStudentHomeState extends State<LegacyStudentHome> {
   AcademyStudentProfile? academyProfile;
   @override
   Widget build(BuildContext c) => ListView(
@@ -1261,13 +1269,13 @@ class _ProfileItem extends StatelessWidget {
   );
 }
 
-class LevelTest extends StatefulWidget {
-  const LevelTest({super.key});
+class LegacyLevelTest extends StatefulWidget {
+  const LegacyLevelTest({super.key});
   @override
-  State<LevelTest> createState() => _LevelTestState();
+  State<LegacyLevelTest> createState() => _LegacyLevelTestState();
 }
 
-class _LevelTestState extends State<LevelTest> {
+class _LegacyLevelTestState extends State<LegacyLevelTest> {
   int q = 0;
   String subject = '수학';
   String grade = '고2';
