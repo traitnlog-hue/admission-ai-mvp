@@ -1,7 +1,10 @@
 part of 'main.dart';
 
 class Home extends StatefulWidget {
-  const Home({super.key});
+  final SessionUser? user;
+  final VoidCallback? onRequireLogin;
+
+  const Home({super.key, this.user, this.onRequireLogin});
 
   @override
   State<Home> createState() => _HomeState();
@@ -134,6 +137,19 @@ class _HomeState extends State<Home> {
           style: const TextStyle(color: mute, fontSize: 12, height: 1.5),
         ),
         const SizedBox(height: 14),
+        ValueAcademyHero(
+          onOpenMap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ValueAcademyMapPage()),
+          ),
+          onQuickCheck: () => showQuickEscapeDiagnosis(context),
+        ),
+        const SizedBox(height: 12),
+        TrustWalletCard(
+          user: widget.user,
+          onRequireLogin: widget.onRequireLogin,
+        ),
+        const SizedBox(height: 12),
         _StudentProfileCard(profile: academyProfile, onEdit: _editProfile),
         const SizedBox(height: 15),
         Container(
@@ -155,9 +171,12 @@ class _HomeState extends State<Home> {
               _Quick(
                 Icons.insights_outlined,
                 '입시 분석',
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdmissionForm()),
+                () => openTicketProtectedFeature(
+                  context: context,
+                  user: widget.user,
+                  onRequireLogin: widget.onRequireLogin,
+                  featureName: '무료 대입전략 진단',
+                  destination: const AdmissionForm(),
                 ),
               ),
               _Quick(Icons.add_task_rounded, '목표 추가', _addGoal),

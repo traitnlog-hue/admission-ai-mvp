@@ -183,7 +183,10 @@ class _AdmissionStrategyHubState extends State<AdmissionStrategyHub> {
 }
 
 class CoachStrategyPanel extends StatelessWidget {
-  const CoachStrategyPanel({super.key});
+  final SessionUser? user;
+  final VoidCallback? onRequireLogin;
+
+  const CoachStrategyPanel({super.key, this.user, this.onRequireLogin});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -230,11 +233,13 @@ class CoachStrategyPanel extends StatelessWidget {
                     color: Color(group.colorValue),
                   ),
                   label: Text(group.title),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          AdmissionStrategyHub(initialTargetId: group.id),
+                  onPressed: () => openTicketProtectedFeature(
+                    context: context,
+                    user: user,
+                    onRequireLogin: onRequireLogin,
+                    featureName: '${group.title} 무료 대입전략 진단',
+                    destination: AdmissionStrategyHub(
+                      initialTargetId: group.id,
                     ),
                   ),
                 ),
@@ -243,9 +248,12 @@ class CoachStrategyPanel extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AdmissionStrategyHub()),
+          onPressed: () => openTicketProtectedFeature(
+            context: context,
+            user: user,
+            onRequireLogin: onRequireLogin,
+            featureName: '무료 대입전략 진단',
+            destination: const AdmissionStrategyHub(),
           ),
           icon: const Icon(Icons.insights_outlined, size: 18),
           label: const Text('무료 대입 준비도 분석'),

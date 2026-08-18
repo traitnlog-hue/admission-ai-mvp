@@ -26,6 +26,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('나의 진학 준비'), findsOneWidget);
+    expect(find.text('월 30만 원 이하,\n성적은 올릴 수 있게.'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('무료 진단'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('무료 진단'), findsOneWidget);
     expect(find.text('홈'), findsOneWidget);
     expect(find.text('탐색'), findsOneWidget);
@@ -51,6 +57,121 @@ void main() {
     await tester.tap(find.text('무료 진단 알려줘'));
     await tester.pump();
     expect(find.textContaining('국어·영어·수학'), findsOneWidget);
+  });
+
+  testWidgets('3초 비상구가 가입 없이 조합 리포트를 만든다', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: QuickEscapeDiagnosis()));
+
+    expect(find.text('학년과 고민만\n고르면 됩니다.'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('3초 리포트 보기'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.drag(find.byType(ListView), const Offset(0, -90));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('3초 리포트 보기'));
+    await tester.pump();
+
+    expect(find.text('개념 소수정예 + 1:1 오답 클리닉'), findsOneWidget);
+    expect(find.text('상담 전 꼭 확인'), findsOneWidget);
+  });
+
+  testWidgets('갓성비 맵이 예산과 카카오맵 동선을 보여준다', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ValueAcademyMapPage()));
+
+    expect(find.text('갓성비 학원·강사 맵'), findsOneWidget);
+    expect(find.text('30만원'), findsOneWidget);
+    expect(find.text('카카오맵'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('월 19만'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('월 19만'), findsWidgets);
+  });
+
+  testWidgets('게스트에게 회원·영수증 티켓 게이트를 안내한다', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: MemberReceiptGatePage(featureName: '무료 대입전략 진단')),
+    );
+
+    expect(find.textContaining('인증 회원 전용'), findsOneWidget);
+    expect(find.text('영수증 1건당 대입전략 또는 고교탐색 1회'), findsOneWidget);
+    expect(find.text('회원가입·로그인하기'), findsOneWidget);
+  });
+
+  testWidgets('인증 회원이 티켓을 사용하면 진단으로 이동한다', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    const user = SessionUser(name: '티켓 학생', email: 'ticket@example.com');
+    await TrustWallet.issueReceiptReward(user, 'receipt-ticket-test');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: FilledButton(
+              onPressed: () => openTicketProtectedFeature(
+                context: context,
+                user: user,
+                featureName: '무료 고교탐색 진단',
+                destination: const Scaffold(body: Text('보호된 진단 화면')),
+              ),
+              child: const Text('진단 열기'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('진단 열기'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('티켓 1매를 사용'), findsOneWidget);
+    await tester.tap(find.text('티켓 사용하고 시작'));
+    await tester.pumpAndSettle();
+    expect(find.text('보호된 진단 화면'), findsOneWidget);
+    expect((await TrustWallet.load(user)).tickets, 0);
+  });
+
+  testWidgets('영수증 인증 화면이 이미지·후기·보상을 안내한다', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReceiptVerificationPage(
+          user: SessionUser(name: '인증 학생', email: 'proof@example.com'),
+        ),
+      ),
+    );
+
+    expect(find.text('영수증·성적표 인증'), findsOneWidget);
+    expect(find.text('영수증 1건 = 진단 티켓 1매'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('이미지 선택'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('이미지 선택'), findsOneWidget);
+  });
+
+  testWidgets('리얼 제보 피드가 검수 정책과 데모 신호를 보여준다', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Community(
+            user: SessionUser(
+              name: '체험 학생',
+              email: 'guest@gachi.local',
+              isGuest: true,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('리얼 제보 · 핫딜'), findsOneWidget);
+    expect(find.textContaining('검수 전 학원명'), findsOneWidget);
+    expect(find.textContaining('MVP 데모'), findsWidgets);
   });
 
   testWidgets('admission intake renders valid grade controls', (

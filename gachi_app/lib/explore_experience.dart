@@ -2,8 +2,15 @@ part of 'main.dart';
 
 class Explore extends StatefulWidget {
   final VoidCallback onOpenCoach;
+  final SessionUser? user;
+  final VoidCallback? onRequireLogin;
 
-  const Explore({super.key, required this.onOpenCoach});
+  const Explore({
+    super.key,
+    required this.onOpenCoach,
+    this.user,
+    this.onRequireLogin,
+  });
 
   @override
   State<Explore> createState() => _ExploreState();
@@ -39,26 +46,32 @@ class _ExploreState extends State<Explore> {
         category: '입시',
         title: 'GACHI ADMISSION',
         description: 'SKY·의치한약수·관심 전공별 무료 준비도와 전략을 비교해요.',
-        meta: '공식 자료 · 무료/PRO',
+        meta: '회원·인증 티켓 1매 · PRO',
         badge: '대입 전략',
         icon: Icons.school_outlined,
         color: const Color(0xff5146E5),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AdmissionStrategyHub()),
+        onTap: () => openTicketProtectedFeature(
+          context: context,
+          user: widget.user,
+          onRequireLogin: widget.onRequireLogin,
+          featureName: '무료 대입전략 진단',
+          destination: const AdmissionStrategyHub(),
         ),
       ),
       _ExploreToolData(
         category: '진로',
         title: 'GACHI HIGH',
         description: '학습 성향과 통학 조건을 바탕으로 맞는 고교 환경을 찾아요.',
-        meta: '약 3분 · 환경 추천',
+        meta: '회원·인증 티켓 1매',
         badge: '고교 탐색',
         icon: Icons.domain_outlined,
         color: const Color(0xffE75B2B),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const HighSchoolFinder()),
+        onTap: () => openTicketProtectedFeature(
+          context: context,
+          user: widget.user,
+          onRequireLogin: widget.onRequireLogin,
+          featureName: '무료 고교탐색 진단',
+          destination: const HighSchoolFinder(),
         ),
       ),
       _ExploreToolData(

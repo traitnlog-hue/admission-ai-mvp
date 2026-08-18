@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -16,6 +17,7 @@ part 'commerce_experience.dart';
 part 'admission_strategy_experience.dart';
 part 'explore_experience.dart';
 part 'level_test_experience.dart';
+part 'local_value_experience.dart';
 
 const navy = Color(0xff101114),
     surface = Color(0xffFFFFFF),
@@ -85,10 +87,14 @@ class Shell extends StatefulWidget {
 class _ShellState extends State<Shell> {
   int index = 0;
   List<Widget> get pages => [
-    const Home(),
-    Explore(onOpenCoach: () => setState(() => index = 3)),
-    const Community(),
-    const Coach(),
+    Home(user: widget.user, onRequireLogin: widget.onLogout),
+    Explore(
+      user: widget.user,
+      onRequireLogin: widget.onLogout,
+      onOpenCoach: () => setState(() => index = 3),
+    ),
+    Community(user: widget.user, onRequireLogin: widget.onLogout),
+    Coach(user: widget.user, onRequireLogin: widget.onLogout),
     Profile(user: widget.user, onLogout: widget.onLogout),
   ];
   @override
@@ -1582,8 +1588,8 @@ class _LegacyMenu extends StatelessWidget {
   );
 }
 
-class Community extends StatelessWidget {
-  const Community({super.key});
+class LegacyCommunity extends StatelessWidget {
+  const LegacyCommunity({super.key});
   @override
   Widget build(BuildContext c) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
@@ -1668,7 +1674,10 @@ class _Forum extends StatelessWidget {
 }
 
 class Coach extends StatelessWidget {
-  const Coach({super.key});
+  final SessionUser? user;
+  final VoidCallback? onRequireLogin;
+
+  const Coach({super.key, this.user, this.onRequireLogin});
   @override
   Widget build(BuildContext c) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
@@ -1741,9 +1750,12 @@ class Coach extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             FilledButton.icon(
-              onPressed: () => Navigator.push(
-                c,
-                MaterialPageRoute(builder: (_) => const AdmissionStrategyHub()),
+              onPressed: () => openTicketProtectedFeature(
+                context: c,
+                user: user,
+                onRequireLogin: onRequireLogin,
+                featureName: '무료 대입전략 진단',
+                destination: const AdmissionStrategyHub(),
               ),
               icon: const Icon(Icons.insights_outlined, size: 18),
               label: const Text('입시 전략 진단 시작'),
@@ -1760,7 +1772,7 @@ class Coach extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 20),
-      const CoachStrategyPanel(),
+      CoachStrategyPanel(user: user, onRequireLogin: onRequireLogin),
       const SizedBox(height: 20),
       const Text(
         'COACH+가 함께 보는 항목',
