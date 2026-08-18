@@ -71,6 +71,50 @@ void main() {
     expect(find.text('무료 분석 결과'), findsOneWidget);
   });
 
+  testWidgets('SKY strategy hub creates a free readiness report', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: AdmissionStrategyHub()));
+
+    expect(find.text('SKY'), findsWidgets);
+    expect(find.text('서울대·연세대·고려대'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('SKY 무료 준비도 진단'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('SKY 무료 준비도 진단'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SKY 무료 진단'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('무료 전략 분석 결과 보기'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('무료 전략 분석 결과 보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SKY\n준비도 리포트'), findsOneWidget);
+    expect(find.text('추천 전략 방향'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('PRO 정밀 분석 이어가기'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('PRO 정밀 분석 이어가기'), findsOneWidget);
+  });
+
+  testWidgets('의치한약수 목표군이 의료계열 전략을 보여준다', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AdmissionStrategyHub(initialTargetId: 'medical')),
+    );
+
+    expect(find.text('의치한약수'), findsWidgets);
+    expect(find.text('의·치·한·약·수의'), findsOneWidget);
+    expect(find.textContaining('수능최저'), findsWidgets);
+  });
+
   testWidgets('high school finder creates a recommendation', (
     WidgetTester tester,
   ) async {

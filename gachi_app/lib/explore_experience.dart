@@ -38,14 +38,14 @@ class _ExploreState extends State<Explore> {
       _ExploreToolData(
         category: '입시',
         title: 'GACHI ADMISSION',
-        description: '희망 대학·전공과 성적을 입력하고 지원 전략 GAP을 분석해요.',
-        meta: '약 5분 · 맞춤 분석',
+        description: 'SKY·의치한약수·관심 전공별 무료 준비도와 전략을 비교해요.',
+        meta: '공식 자료 · 무료/PRO',
         badge: '대입 전략',
         icon: Icons.school_outlined,
         color: const Color(0xff5146E5),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const CoachAdmissionIntake()),
+          MaterialPageRoute(builder: (_) => const AdmissionStrategyHub()),
         ),
       ),
       _ExploreToolData(
@@ -633,7 +633,7 @@ class _ChatAssistantPageState extends State<ChatAssistantPage> {
     if (message.contains('대학') ||
         message.contains('입시') ||
         message.contains('전형')) {
-      return '탐색 탭의 GACHI ADMISSION에서 희망 대학·전공, 내신과 모의고사 성적을 입력하면 우선 전략과 이번 주 보완 과제를 확인할 수 있어요.';
+      return '탐색 탭의 GACHI ADMISSION에서 SKY·의치한약수·관심 전공을 고르고 무료 준비도를 확인해 보세요. AI 코치가 전형 방향과 이번 주 보완 과제를 제안하고, PRO에서 대학·전형별 GAP과 4주 로드맵으로 확장합니다.';
     }
     if (message.contains('고교') || message.contains('학교')) {
       return 'GACHI HIGH에서 내신 관리, 심화 학습, 진로 활동 중 우선순위를 고르면 적합한 고교 환경과 확인할 항목을 안내해 드려요.';

@@ -6,12 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'insight_data.dart';
+import 'admission_strategy_data.dart';
 import 'level_test_data.dart';
 import 'study_plan_models.dart';
 
 part 'home_experience.dart';
 part 'auth_experience.dart';
 part 'commerce_experience.dart';
+part 'admission_strategy_experience.dart';
 part 'explore_experience.dart';
 part 'level_test_experience.dart';
 
@@ -1693,7 +1695,7 @@ class Coach extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              '2027 대입',
+              '2027·2028 대입',
               style: TextStyle(
                 color: lime,
                 fontSize: 11,
@@ -1741,7 +1743,7 @@ class Coach extends StatelessWidget {
             FilledButton.icon(
               onPressed: () => Navigator.push(
                 c,
-                MaterialPageRoute(builder: (_) => const CoachAdmissionIntake()),
+                MaterialPageRoute(builder: (_) => const AdmissionStrategyHub()),
               ),
               icon: const Icon(Icons.insights_outlined, size: 18),
               label: const Text('입시 전략 진단 시작'),
@@ -1757,6 +1759,8 @@ class Coach extends StatelessWidget {
           ],
         ),
       ),
+      const SizedBox(height: 20),
+      const CoachStrategyPanel(),
       const SizedBox(height: 20),
       const Text(
         'COACH+가 함께 보는 항목',
@@ -2762,7 +2766,7 @@ class _Result extends StatelessWidget {
 class AdmissionForm extends StatelessWidget {
   const AdmissionForm({super.key});
   @override
-  Widget build(BuildContext c) => const CoachAdmissionIntake();
+  Widget build(BuildContext c) => const AdmissionStrategyHub();
 }
 
 class HighReport extends StatelessWidget {

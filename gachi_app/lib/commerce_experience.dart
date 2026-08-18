@@ -586,7 +586,10 @@ class PremiumAdmissionReport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final major = freeResult?['major'] ?? '희망 전공';
+    final targetId = freeResult?['targetId'] as String? ?? 'sky';
+    final target = admissionTargetById(targetId);
+    final major = freeResult?['major'] ?? target.title;
+    final coreSubjects = target.coreSubjects.take(3).join('·');
     return Scaffold(
       backgroundColor: mist,
       appBar: AppBar(backgroundColor: mist, title: const Text('정밀 분석 리포트')),
@@ -617,25 +620,67 @@ class PremiumAdmissionReport extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 13),
-          const _PremiumWeek(
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xffDCE4F1)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '목표군 정밀 점검 항목',
+                  style: TextStyle(color: text, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 9),
+                ...target.premiumChecks.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline_rounded,
+                          color: lime,
+                          size: 17,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _PremiumWeek(
             week: '1주차',
-            title: '성적 GAP 정리',
-            body: '대학별 교과 반영 방식과 현재 내신·모의고사 차이를 표로 정리합니다.',
+            title: '${target.title} 전형 GAP 정리',
+            body: '대학별 전형요소와 현재 내신·모의고사·학생부의 차이를 표로 정리합니다.',
           ),
-          const _PremiumWeek(
+          _PremiumWeek(
             week: '2주차',
-            title: '학생부 근거 강화',
-            body: '전공 관심을 보여주는 세특 문장과 활동 결과의 근거를 보완합니다.',
+            title: '핵심 교과·선택과목 점검',
+            body: '$coreSubjects 성취 추이와 전공 연계 과목 이수를 점검하고 보완 순서를 정합니다.',
           ),
-          const _PremiumWeek(
+          _PremiumWeek(
             week: '3주차',
-            title: '전형 조합 시뮬레이션',
-            body: '교과·학종·정시 조합을 안정·적정·도전 지원군으로 나눕니다.',
+            title: '학생부·면접 근거 강화',
+            body:
+                '${target.evaluationFocus.take(3).join('·')} 항목을 기준으로 활동 근거와 답변 구조를 보완합니다.',
           ),
-          const _PremiumWeek(
+          _PremiumWeek(
             week: '4주차',
-            title: '지원 체크리스트 확정',
-            body: '수능최저, 제출서류, 면접 준비와 공식 모집요강 확인 일정을 확정합니다.',
+            title: '지원 조합·일정 확정',
+            body:
+                '${target.routes.join('·')} 조합을 안정·적정·도전으로 나누고 최종 모집요강 확인 일정을 확정합니다.',
           ),
           const SizedBox(height: 14),
           OutlinedButton.icon(
