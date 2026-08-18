@@ -11,6 +11,20 @@ flutter run -d chrome
 
 분석 API는 저장소 루트의 FastAPI 서버를 사용합니다. 서버가 실행되지 않은 경우 앱은 명시적으로 표시된 로컬 규칙 기반 결과를 제공합니다.
 
+## 로그인 실행 옵션
+
+```bash
+flutter run -d chrome \
+  --web-port 7357 \
+  --dart-define=AUTH_API_BASE_URL=http://127.0.0.1:8000 \
+  --dart-define=GOOGLE_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+```
+
+웹 Google 로그인은 커스텀 버튼이 아니라 Google Identity Services 공식 버튼을
+렌더링합니다. Google Cloud의 승인된 JavaScript 원본에 로컬 및 운영 도메인이
+등록되어 있어야 합니다. 이메일 로그인은 루트 FastAPI 서버의 계정 API를
+사용하며, 실명인증은 계약한 본인확인 사업자의 서버 URL을 설정한 뒤 활성화됩니다.
+
 ## 로그인
 
 앱 로그인·로그아웃은 공식 `google_sign_in` SDK에 연결되어 있습니다. 체험 모드는 로그인 없이 UX를 확인하기 위한 별도 흐름입니다.

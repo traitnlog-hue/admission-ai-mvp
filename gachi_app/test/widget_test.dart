@@ -10,11 +10,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('다시 만나서\n반가워요.'), findsOneWidget);
-    expect(find.text('Google로 계속하기'), findsOneWidget);
+    expect(find.textContaining('Google 로그인 준비 필요'), findsOneWidget);
+    expect(find.text('이메일로 로그인'), findsOneWidget);
+    await tester.ensureVisible(find.text('로그인 없이 둘러보기'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('로그인 없이 둘러보기'));
     await tester.pumpAndSettle();
 
     expect(find.text('나의 진학 준비'), findsOneWidget);
+  });
+
+  testWidgets('email sign-up form validates required account fields', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const GachiApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('회원가입'));
+    await tester.pump();
+    expect(find.byKey(const Key('email-name-field')), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('email-submit-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('email-submit-button')));
+    await tester.pump();
+    expect(find.text('올바른 이메일 주소를 입력해 주세요.'), findsOneWidget);
+  });
+
+  testWidgets('real-name verification never asks for resident ID', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: IdentityVerificationPage(
+          user: SessionUser(
+            name: '테스트 학생',
+            email: 'student@example.com',
+            authProvider: 'email',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('휴대폰 본인인증 시작'), findsOneWidget);
+    expect(find.textContaining('주민등록번호와 신분증 원본'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
   });
 
   testWidgets('상단 알림과 마이페이지 버튼이 실제 화면을 연다', (WidgetTester tester) async {

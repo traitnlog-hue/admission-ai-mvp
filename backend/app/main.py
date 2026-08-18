@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .database import admissions_for_year, initialize, upsert_admissions
 from .academies import recommendations
+from .auth import initialize_auth, login, logout, register, user_for_token
 from .engine import analyze
 from .importer import parse_official_csv
 from .models import AnalysisResult, StudentProfile
@@ -19,20 +20,83 @@ FRONTEND_DIR = ROOT_DIR / "frontend"
 app = FastAPI(title="진로입시 AI API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:8080", "http://127.0.0.1:8080"],
+    allow_origins=[
+        "http://localhost:7357",
+        "http://127.0.0.1:7357",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+    ],
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
 @app.on_event("startup")
 def setup_data_store() -> None:
     initialize()
+    initialize_auth()
 
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+def _bearer_token(authorization: Optional[str]) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+    return authorization.removeprefix("Bearer ").strip()
+
+
+@app.post("/api/auth/register", status_code=201)
+async def register_account(request: Request) -> dict:
+    data = await request.json()
+    try:
+        return register(
+            str(data.get("email", "")),
+            str(data.get("password", "")),
+            str(data.get("name", "")),
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.post("/api/auth/login")
+async def login_account(request: Request) -> dict:
+    data = await request.json()
+    result = login(str(data.get("email", "")), str(data.get("password", "")))
+    if result is None:
+        raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다.")
+    return result
+
+
+@app.get("/api/auth/me")
+def current_account(authorization: Optional[str] = Header(default=None)) -> dict:
+    account = user_for_token(_bearer_token(authorization))
+    if account is None:
+        raise HTTPException(status_code=401, detail="세션이 만료되었습니다. 다시 로그인해 주세요.")
+    return {"user": account}
+
+
+@app.post("/api/auth/logout", status_code=204)
+def logout_account(authorization: Optional[str] = Header(default=None)) -> None:
+    logout(_bearer_token(authorization))
+
+
+@app.post("/api/identity/start")
+def start_identity_verification(authorization: Optional[str] = Header(default=None)) -> dict:
+    account = user_for_token(_bearer_token(authorization))
+    if account is None:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+    verification_url = os.getenv("IDENTITY_VERIFICATION_URL", "").strip()
+    if not verification_url:
+        raise HTTPException(
+            status_code=503,
+            detail="실명인증 사업자 연동 정보가 아직 설정되지 않았습니다.",
+        )
+    return {"verification_url": verification_url}
 
 
 @app.get("/api/admissions/{year}")

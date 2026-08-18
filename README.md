@@ -13,6 +13,22 @@ pip install -r requirements.txt
 uvicorn backend.app.main:app --reload
 ```
 
+Flutter 앱은 기본적으로 `http://127.0.0.1:8000`의 API를 사용합니다. 다른 주소를
+사용하려면 `--dart-define=AUTH_API_BASE_URL=https://api.example.com`을 추가하세요.
+
+## 로그인과 실명인증 설정
+
+- 이메일 회원가입·로그인은 FastAPI의 `/api/auth/*` 계정/세션 API를 사용합니다.
+  운영 환경은 HTTPS를 적용하고 `GACHI_AUTH_PEPPER`를 서버 비밀값으로 설정하세요.
+- 웹 Google 로그인은 Google Cloud에서 Web OAuth 클라이언트를 만든 뒤 실행 시
+  `--dart-define=GOOGLE_CLIENT_ID=...apps.googleusercontent.com`을 전달해야 합니다.
+  `http://localhost:7357`, 운영 도메인 등을 승인된 JavaScript 원본에 등록하세요.
+- Android/iOS는 각 플랫폼 OAuth 설정 파일과 서명 인증서 등록이 별도로 필요합니다.
+- 실명인증은 PASS/NICE/KCB 등 사업자 계약 후 서버의
+  `IDENTITY_VERIFICATION_URL`을 설정해야 시작됩니다. 앱은 주민등록번호나 신분증
+  원본을 직접 저장하지 않으며, 콜백의 서명 검증과 인증 상태 갱신은 운영 연동 시
+  반드시 서버에서 처리해야 합니다.
+
 그 후 `http://127.0.0.1:8000`으로 접속합니다. API 문서는 `http://127.0.0.1:8000/docs`에서 확인할 수 있습니다.
 
 ## 현재 범위

@@ -10,6 +10,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'google_login_button.dart';
 import 'insight_data.dart';
 import 'admission_strategy_data.dart';
 import 'level_test_data.dart';
@@ -2512,6 +2513,20 @@ class Profile extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (user?.authProvider == 'email') ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        user?.isIdentityVerified == true
+                            ? '실명 인증 완료'
+                            : '이메일 계정 · 실명 미인증',
+                        style: TextStyle(
+                          color: user?.isIdentityVerified == true
+                              ? const Color(0xff147A50)
+                              : mute,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -2566,6 +2581,18 @@ class Profile extends StatelessWidget {
           ),
         ),
         _ProfileItem(
+          user?.isIdentityVerified == true
+              ? Icons.verified_user_rounded
+              : Icons.badge_outlined,
+          user?.isIdentityVerified == true ? '실명 인증 완료' : '실명 인증',
+          onTap: () => Navigator.push(
+            c,
+            MaterialPageRoute(
+              builder: (_) => IdentityVerificationPage(user: user),
+            ),
+          ),
+        ),
+        _ProfileItem(
           Icons.settings_outlined,
           '설정',
           onTap: () => Navigator.push(
@@ -2590,6 +2617,161 @@ class Profile extends StatelessWidget {
       ],
     );
   }
+}
+
+class IdentityVerificationPage extends StatefulWidget {
+  final SessionUser? user;
+
+  const IdentityVerificationPage({super.key, required this.user});
+
+  @override
+  State<IdentityVerificationPage> createState() =>
+      _IdentityVerificationPageState();
+}
+
+class _IdentityVerificationPageState extends State<IdentityVerificationPage> {
+  bool loading = false;
+  String? message;
+
+  Future<void> _startVerification() async {
+    final token = widget.user?.authToken;
+    if (token == null || token.isEmpty) {
+      setState(
+        () => message = widget.user?.isGuest == true
+            ? '실명 인증은 회원가입 후 이용할 수 있습니다.'
+            : '현재 계정은 서버 세션이 연결되지 않았습니다. 이메일 계정으로 로그인하거나 Google 서버 인증 연동을 완료해 주세요.',
+      );
+      return;
+    }
+    setState(() {
+      loading = true;
+      message = null;
+    });
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_authApiBaseUrl/api/identity/start'),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 8));
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode != 200) {
+        throw EmailAuthException(
+          body['detail']?.toString() ?? '실명 인증을 시작하지 못했습니다.',
+        );
+      }
+      final uri = Uri.tryParse(body['verification_url']?.toString() ?? '');
+      if (uri == null ||
+          !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw const EmailAuthException('인증 페이지를 열지 못했습니다.');
+      }
+    } on EmailAuthException catch (error) {
+      if (mounted) setState(() => message = error.message);
+    } catch (_) {
+      if (mounted) setState(() => message = '인증 서버에 연결할 수 없습니다.');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: mist,
+    appBar: AppBar(backgroundColor: mist, title: const Text('실명 인증')),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                widget.user?.isIdentityVerified == true
+                    ? Icons.verified_user_rounded
+                    : Icons.badge_outlined,
+                color: widget.user?.isIdentityVerified == true
+                    ? const Color(0xff147A50)
+                    : lime,
+                size: 34,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                widget.user?.isIdentityVerified == true
+                    ? '본인확인이 완료됐어요'
+                    : '안전한 후기와 진단을 위한 본인확인',
+                style: const TextStyle(
+                  color: text,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'PASS·NICE·KCB 같은 본인확인 사업자의 인증 결과만 서버에서 확인합니다. 주민등록번호와 신분증 원본은 GACHI가 직접 수집하거나 저장하지 않습니다.',
+                style: TextStyle(color: mute, fontSize: 12, height: 1.6),
+              ),
+              const SizedBox(height: 18),
+              if (widget.user?.isIdentityVerified != true)
+                FilledButton.icon(
+                  key: const Key('start-identity-verification'),
+                  onPressed: loading ? null : _startVerification,
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  label: Text(loading ? '연결 중...' : '휴대폰 본인인증 시작'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              if (message != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  message!,
+                  style: const TextStyle(
+                    color: Color(0xffA53C24),
+                    fontSize: 11,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        const Text(
+          '연동 전 체크리스트',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        const SizedBox(height: 10),
+        const _IdentityChecklistItem('본인확인 사업자 계약 및 심사'),
+        const _IdentityChecklistItem('서버 콜백 서명 검증'),
+        const _IdentityChecklistItem('인증 결과 최소 저장 및 보유기간 설정'),
+      ],
+    ),
+  );
+}
+
+class _IdentityChecklistItem extends StatelessWidget {
+  final String label;
+  const _IdentityChecklistItem(this.label);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      children: [
+        const Icon(Icons.check_circle_outline_rounded, size: 18, color: mute),
+        const SizedBox(width: 9),
+        Text(label, style: const TextStyle(color: mute, fontSize: 12)),
+      ],
+    ),
+  );
 }
 
 class _ProfileInfoPage extends StatelessWidget {
