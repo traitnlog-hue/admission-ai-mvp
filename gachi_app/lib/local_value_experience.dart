@@ -640,7 +640,7 @@ class _TrustWalletCardState extends State<TrustWalletCard> {
   }
 }
 
-class _WalletShell extends StatelessWidget {
+class _WalletShell extends StatefulWidget {
   final IconData icon;
   final String title;
   final String body;
@@ -656,54 +656,266 @@ class _WalletShell extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: const Color(0xffFFF7DF),
-    borderRadius: BorderRadius.circular(18),
-    child: InkWell(
-      onTap: onTap,
+  State<_WalletShell> createState() => _WalletShellState();
+}
+
+class _WalletShellState extends State<_WalletShell>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _receiptReveal;
+  bool? _animationsDisabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _receiptReveal = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.08, 1, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final disabled = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (_animationsDisabled == disabled) return;
+    _animationsDisabled = disabled;
+    if (disabled) {
+      _controller
+        ..stop()
+        ..value = 1;
+    } else {
+      _controller
+        ..value = 0
+        ..forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    excludeSemantics: true,
+    label: '${widget.title}. ${widget.body}. ${widget.trailing}',
+    child: Material(
+      color: const Color(0xffFFF7DF),
       borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.all(15),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xffA66B00)),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: text,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    body,
-                    style: const TextStyle(
-                      color: mute,
-                      fontSize: 9,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          child: Row(
+            children: [
+              _ReceiptTicketAnimation(
+                icon: widget.icon,
+                reveal: _receiptReveal,
               ),
-            ),
-            Text(
-              trailing,
-              style: const TextStyle(
-                color: Color(0xffA66B00),
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        color: text,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      widget.body,
+                      style: const TextStyle(
+                        color: mute,
+                        fontSize: 9,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              AnimatedBuilder(
+                animation: _receiptReveal,
+                builder: (context, child) => Transform.translate(
+                  offset: Offset(2 * _receiptReveal.value, 0),
+                  child: child,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.trailing,
+                      style: const TextStyle(
+                        color: Color(0xffA66B00),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xffA66B00),
+                      size: 15,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ),
   );
+}
+
+class _ReceiptTicketAnimation extends StatelessWidget {
+  final IconData icon;
+  final Animation<double> reveal;
+
+  const _ReceiptTicketAnimation({required this.icon, required this.reveal});
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox(
+      key: const Key('receipt-ticket-animation'),
+      width: 42,
+      height: 48,
+      child: AnimatedBuilder(
+        animation: reveal,
+        builder: (context, _) {
+          final progress = reveal.value;
+          return Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              Positioned(
+                top: 16,
+                child: ClipRect(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    heightFactor: 0.30 + (0.70 * progress),
+                    child: ClipPath(
+                      clipper: const _ReceiptEdgeClipper(),
+                      child: Container(
+                        key: const Key('receipt-ticket-paper'),
+                        width: 29,
+                        height: 31,
+                        padding: const EdgeInsets.fromLTRB(5, 7, 5, 4),
+                        color: const Color(0xffFFFDF5),
+                        child: Opacity(
+                          opacity: progress,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Container(
+                                height: 2,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffE7C77E),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              const Text(
+                                '+1 TICKET',
+                                maxLines: 1,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xffA66B00),
+                                  fontSize: 4.5,
+                                  height: 1,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 4 - (progress * 2),
+                child: Container(
+                  width: 37,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF4C968),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xffE7B64C)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color.fromRGBO(
+                          190,
+                          124,
+                          4,
+                          0.12 + (0.18 * progress),
+                        ),
+                        blurRadius: 7 + (5 * progress),
+                        spreadRadius: progress,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: const Color(0xff8F5B00), size: 14),
+                ),
+              ),
+              Positioned(
+                top: 22,
+                child: Container(
+                  width: 25,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: const Color(0xff9E6500),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  );
+}
+
+class _ReceiptEdgeClipper extends CustomClipper<Path> {
+  const _ReceiptEdgeClipper();
+
+  @override
+  Path getClip(Size size) {
+    const toothWidth = 4.0;
+    const toothDepth = 3.0;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height - toothDepth);
+    var x = size.width;
+    var up = false;
+    while (x > 0) {
+      x = (x - toothWidth).clamp(0.0, size.width).toDouble();
+      path.lineTo(x, size.height - (up ? toothDepth : 0));
+      up = !up;
+    }
+    return path
+      ..lineTo(0, 0)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 class ValueAcademy {

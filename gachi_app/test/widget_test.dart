@@ -152,6 +152,30 @@ void main() {
     expect(find.text('이미지 선택'), findsOneWidget);
   });
 
+  testWidgets('메인 영수증 티켓이 펼쳐지는 애니메이션을 표시한다', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: TrustWalletCard(
+            user: SessionUser(
+              name: '체험 학생',
+              email: 'guest@gachi.local',
+              isGuest: true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('receipt-ticket-animation')), findsOneWidget);
+    expect(find.byKey(const Key('receipt-ticket-paper')), findsOneWidget);
+    expect(find.text('인증 회원 진단 티켓'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 1600));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('리얼 제보 피드가 검수 정책과 데모 신호를 보여준다', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
