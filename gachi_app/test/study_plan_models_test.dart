@@ -22,5 +22,6 @@ void main() {
     expect(tasks.every((task) => task.goalId == goal.id), isTrue);
     expect(tasks.every((task) => task.minutes == 60), isTrue);
     expect(tasks.map((task) => task.day).toSet(), hasLength(5));
+    expect(StudyGoal.fromJson(goal.toJson()).target, goal.target);
   });
 }

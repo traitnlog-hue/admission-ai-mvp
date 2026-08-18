@@ -22,6 +22,32 @@ class StudyGoal {
     required this.weakPoint,
     required this.successMetric,
   });
+
+  Map<String, Object> toJson() => {
+    'id': id,
+    'area': area,
+    'subject': subject,
+    'target': target,
+    'period': period,
+    'weeklyHours': weeklyHours,
+    'sessionsPerWeek': sessionsPerWeek,
+    'preferredTime': preferredTime,
+    'weakPoint': weakPoint,
+    'successMetric': successMetric,
+  };
+
+  factory StudyGoal.fromJson(Map<String, dynamic> json) => StudyGoal(
+    id: json['id'] as String,
+    area: json['area'] as String,
+    subject: json['subject'] as String,
+    target: json['target'] as String,
+    period: json['period'] as String,
+    weeklyHours: json['weeklyHours'] as int,
+    sessionsPerWeek: json['sessionsPerWeek'] as int,
+    preferredTime: json['preferredTime'] as String,
+    weakPoint: json['weakPoint'] as String,
+    successMetric: json['successMetric'] as String,
+  );
 }
 
 class StudyTask {

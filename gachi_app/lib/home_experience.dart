@@ -8,12 +8,52 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  static const _goalsKey = 'gachi.study.goals';
+  static const _completedKey = 'gachi.study.completed';
   AcademyStudentProfile? academyProfile;
   final List<StudyGoal> goals = [];
   final Set<String> completedTaskIds = {};
   String insightGrade = '고3';
 
   List<StudyTask> get weeklyTasks => goals.expand(buildWeeklyTasks).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _restorePlan();
+  }
+
+  Future<void> _restorePlan() async {
+    final preferences = await SharedPreferences.getInstance();
+    final encodedGoals = preferences.getString(_goalsKey);
+    final savedCompleted = preferences.getStringList(_completedKey) ?? [];
+    if (!mounted) return;
+    setState(() {
+      if (encodedGoals != null) {
+        final decoded = jsonDecode(encodedGoals) as List<dynamic>;
+        goals
+          ..clear()
+          ..addAll(
+            decoded.map(
+              (item) =>
+                  StudyGoal.fromJson(Map<String, dynamic>.from(item as Map)),
+            ),
+          );
+      }
+      completedTaskIds
+        ..clear()
+        ..addAll(savedCompleted);
+    });
+  }
+
+  Future<void> _savePlan() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(
+      _goalsKey,
+      jsonEncode(goals.map((goal) => goal.toJson()).toList()),
+    );
+    await preferences.setStringList(_completedKey, completedTaskIds.toList());
+  }
 
   Future<void> _editProfile() async {
     final profile = await Navigator.push<AcademyStudentProfile>(
@@ -35,13 +75,17 @@ class _HomeState extends State<Home> {
       context,
       MaterialPageRoute(builder: (_) => const GoalPlanForm()),
     );
-    if (goal != null && mounted) setState(() => goals.add(goal));
+    if (goal != null && mounted) {
+      setState(() => goals.add(goal));
+      await _savePlan();
+    }
   }
 
   void _toggleTask(String id, bool completed) {
     setState(
       () => completed ? completedTaskIds.add(id) : completedTaskIds.remove(id),
     );
+    _savePlan();
   }
 
   @override
