@@ -139,7 +139,7 @@ class _HomeState extends State<Home> {
           onProfile: widget.onOpenProfile,
           hasUnreadNotifications: hasUnreadNotifications,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
         Text(
           academyProfile == null
               ? '나의 진학 준비'
@@ -157,7 +157,7 @@ class _HomeState extends State<Home> {
               : '${academyProfile!.region} · ${academyProfile!.subjects.join(' · ')} 기준으로 입시 전략을 준비하고 있어요.',
           style: const TextStyle(color: mute, fontSize: 12, height: 1.5),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         ValueAcademyHero(
           onOpenMap: () => Navigator.push(
             context,
@@ -166,41 +166,60 @@ class _HomeState extends State<Home> {
           onQuickCheck: () => showQuickEscapeDiagnosis(context),
         ),
         const SizedBox(height: 12),
-        _StudentProfileCard(profile: academyProfile, onEdit: _editProfile),
-        const SizedBox(height: 12),
-        TrustWalletCard(
-          user: widget.user,
-          onRequireLogin: widget.onRequireLogin,
-        ),
-        const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: navy,
-            borderRadius: BorderRadius.circular(20),
+            color: surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xffE2E6EE)),
           ),
-          child: Row(
+          child: Column(
             children: [
-              _Quick(
-                Icons.assignment_outlined,
-                '무료 진단',
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LevelTest()),
+              _StudentProfileCard(
+                profile: academyProfile,
+                onEdit: _editProfile,
+                embedded: true,
+              ),
+              const Divider(height: 1, indent: 14, endIndent: 14),
+              TrustWalletCard(
+                user: widget.user,
+                onRequireLogin: widget.onRequireLogin,
+                embedded: true,
+              ),
+              const Divider(height: 1, indent: 14, endIndent: 14),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 12, 10, 14),
+                child: Row(
+                  children: [
+                    _Quick(
+                      Icons.assignment_outlined,
+                      '무료 진단',
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LevelTest()),
+                      ),
+                      dark: false,
+                    ),
+                    _Quick(
+                      Icons.insights_outlined,
+                      '입시 분석',
+                      () => openTicketProtectedFeature(
+                        context: context,
+                        user: widget.user,
+                        onRequireLogin: widget.onRequireLogin,
+                        featureName: '무료 대입전략 진단',
+                        destination: const AdmissionForm(),
+                      ),
+                      dark: false,
+                    ),
+                    _Quick(
+                      Icons.add_task_rounded,
+                      '목표 추가',
+                      _addGoal,
+                      dark: false,
+                    ),
+                  ],
                 ),
               ),
-              _Quick(
-                Icons.insights_outlined,
-                '입시 분석',
-                () => openTicketProtectedFeature(
-                  context: context,
-                  user: widget.user,
-                  onRequireLogin: widget.onRequireLogin,
-                  featureName: '무료 대입전략 진단',
-                  destination: const AdmissionForm(),
-                ),
-              ),
-              _Quick(Icons.add_task_rounded, '목표 추가', _addGoal),
             ],
           ),
         ),

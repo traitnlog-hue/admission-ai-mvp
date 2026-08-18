@@ -568,8 +568,14 @@ class _ProofRewardBanner extends StatelessWidget {
 class TrustWalletCard extends StatefulWidget {
   final SessionUser? user;
   final VoidCallback? onRequireLogin;
+  final bool embedded;
 
-  const TrustWalletCard({super.key, this.user, this.onRequireLogin});
+  const TrustWalletCard({
+    super.key,
+    this.user,
+    this.onRequireLogin,
+    this.embedded = false,
+  });
 
   @override
   State<TrustWalletCard> createState() => _TrustWalletCardState();
@@ -615,10 +621,10 @@ class _TrustWalletCardState extends State<TrustWalletCard> {
     final user = widget.user;
     if (user == null || user.isGuest) {
       return _WalletShell(
-        icon: Icons.lock_outline_rounded,
         title: '인증 회원 진단 티켓',
         body: '회원가입 후 영수증 1건으로 무료 진단 1회',
         trailing: '안내 보기',
+        embedded: widget.embedded,
         onTap: _open,
       );
     }
@@ -629,10 +635,10 @@ class _TrustWalletCardState extends State<TrustWalletCard> {
             snapshot.data ??
             const TrustStatus(tickets: 0, points: 0, receiptCount: 0);
         return _WalletShell(
-          icon: Icons.confirmation_number_outlined,
           title: '진단 티켓 ${value.tickets}매 · ${value.points}P',
           body: '영수증 인증 ${value.receiptCount}건 · 티켓은 대입전략·고교탐색에 사용',
           trailing: '영수증 인증',
+          embedded: widget.embedded,
           onTap: _open,
         );
       },
@@ -641,18 +647,18 @@ class _TrustWalletCardState extends State<TrustWalletCard> {
 }
 
 class _WalletShell extends StatefulWidget {
-  final IconData icon;
   final String title;
   final String body;
   final String trailing;
   final VoidCallback onTap;
+  final bool embedded;
 
   const _WalletShell({
-    required this.icon,
     required this.title,
     required this.body,
     required this.trailing,
     required this.onTap,
+    this.embedded = false,
   });
 
   @override
@@ -703,23 +709,26 @@ class _WalletShellState extends State<_WalletShell>
 
   @override
   Widget build(BuildContext context) => Semantics(
+    container: true,
     button: true,
     excludeSemantics: true,
     label: '${widget.title}. ${widget.body}. ${widget.trailing}',
     child: Material(
-      color: const Color(0xffFFF7DF),
+      color: widget.embedded ? Colors.transparent : const Color(0xffFFF7DF),
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 9, 14, 9),
+          padding: EdgeInsets.fromLTRB(
+            widget.embedded ? 10 : 12,
+            widget.embedded ? 7 : 9,
+            widget.embedded ? 12 : 14,
+            widget.embedded ? 7 : 9,
+          ),
           child: Row(
             children: [
-              _ReceiptTicketAnimation(
-                icon: widget.icon,
-                reveal: _receiptReveal,
-              ),
+              _ReceiptTicketAnimation(reveal: _receiptReveal),
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
@@ -751,24 +760,10 @@ class _WalletShellState extends State<_WalletShell>
                   offset: Offset(2 * _receiptReveal.value, 0),
                   child: child,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.trailing,
-                      style: const TextStyle(
-                        color: Color(0xffA66B00),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Color(0xffA66B00),
-                      size: 15,
-                    ),
-                  ],
+                child: const Icon(
+                  Icons.chevron_right_rounded,
+                  color: mute,
+                  size: 19,
                 ),
               ),
             ],
@@ -780,16 +775,15 @@ class _WalletShellState extends State<_WalletShell>
 }
 
 class _ReceiptTicketAnimation extends StatelessWidget {
-  final IconData icon;
   final Animation<double> reveal;
 
-  const _ReceiptTicketAnimation({required this.icon, required this.reveal});
+  const _ReceiptTicketAnimation({required this.reveal});
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
     child: SizedBox(
       key: const Key('receipt-ticket-animation'),
-      width: 64,
+      width: 58,
       height: 62,
       child: AnimatedBuilder(
         animation: reveal,
@@ -799,23 +793,6 @@ class _ReceiptTicketAnimation extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
-              Positioned(
-                top: 1,
-                child: Opacity(
-                  opacity: 0.18 + (0.20 * progress),
-                  child: Transform.scale(
-                    scale: 0.78 + (0.22 * progress),
-                    child: Container(
-                      width: 58,
-                      height: 50,
-                      decoration: const BoxDecoration(
-                        color: Color(0xffF1BD48),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
               Positioned(
                 top: 22,
                 child: ClipRect(
@@ -922,23 +899,6 @@ class _ReceiptTicketAnimation extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xff9E6500),
                     borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 3,
-                top: 0,
-                child: Transform.scale(
-                  scale: 0.82 + (0.18 * progress),
-                  child: Container(
-                    width: 18,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffFFF8E6),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xffD99C20)),
-                    ),
-                    child: Icon(icon, color: const Color(0xff8F5700), size: 11),
                   ),
                 ),
               ),
@@ -1066,48 +1026,29 @@ class ValueAcademyHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(20),
+    padding: const EdgeInsets.fromLTRB(18, 17, 18, 16),
     decoration: BoxDecoration(
       color: const Color(0xff163A30),
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
-          children: [
-            Icon(
-              Icons.location_on_outlined,
-              color: Color(0xffA7F3D0),
-              size: 19,
-            ),
-            SizedBox(width: 6),
-            Text(
-              'MAIN · 갓성비 학원·강사 맵',
-              style: TextStyle(
-                color: Color(0xffA7F3D0),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
         const Text(
-          '월 30만 원 이하,\n성적은 올릴 수 있게.',
+          '30만 원 이하 학원,\n인증 후기와 함께 찾기',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 24,
-            height: 1.15,
+            fontSize: 22,
+            height: 1.18,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 6),
         const Text(
-          '동네·과목·월 예산과 영수증 후기 신호로 알짜 선택지를 비교해요.',
-          style: TextStyle(color: Color(0xffC8DDD5), fontSize: 11, height: 1.5),
+          '동네·과목·예산만 고르면 검수된 후보를 비교해요.',
+          style: TextStyle(color: Color(0xffC8DDD5), fontSize: 10, height: 1.5),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 13),
         Row(
           children: [
             Expanded(
@@ -1118,27 +1059,16 @@ class ValueAcademyHero extends StatelessWidget {
                   foregroundColor: const Color(0xff163A30),
                 ),
                 icon: const Icon(Icons.map_outlined, size: 18),
-                label: const Text('지도로 찾기'),
+                label: const Text('학원 지도 보기'),
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onQuickCheck,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Color(0xff5C7E73)),
-                ),
-                icon: const Icon(Icons.bolt_rounded, size: 18),
-                label: const Text('3초 비상구'),
-              ),
+            TextButton(
+              onPressed: onQuickCheck,
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              child: const Text('3초 진단'),
             ),
           ],
-        ),
-        const SizedBox(height: 7),
-        const Text(
-          '※ 현재 학원 카드는 UX 검증용 데모입니다. 게시 전 공개 교습비·인증 영수증으로 검수합니다.',
-          style: TextStyle(color: Color(0xff9EB8AF), fontSize: 8, height: 1.4),
         ),
       ],
     ),

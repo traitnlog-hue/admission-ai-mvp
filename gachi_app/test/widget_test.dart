@@ -55,7 +55,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('나의 진학 준비'), findsOneWidget);
-    expect(find.text('월 30만 원 이하,\n성적은 올릴 수 있게.'), findsOneWidget);
+    expect(find.text('30만 원 이하 학원,\n인증 후기와 함께 찾기'), findsOneWidget);
+    expect(find.text('학생 정보 등록'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('무료 진단'),
       220,

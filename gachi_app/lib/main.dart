@@ -836,163 +836,92 @@ class AcademyStudentProfile {
 class _StudentProfileCard extends StatelessWidget {
   final AcademyStudentProfile? profile;
   final VoidCallback onEdit;
-  const _StudentProfileCard({required this.profile, required this.onEdit});
+  final bool embedded;
+
+  const _StudentProfileCard({
+    required this.profile,
+    required this.onEdit,
+    this.embedded = false,
+  });
+
   @override
   Widget build(BuildContext c) {
-    if (profile == null) {
-      return InkWell(
+    final p = profile;
+    final title = p == null ? '학생 정보 등록' : '${p.name} · ${p.grade}';
+    final body = p == null
+        ? '학교와 관심 과목을 입력해 맞춤 추천을 시작하세요.'
+        : '${p.school} · ${p.region} · ${p.subjects.join('·')}';
+    final radius = BorderRadius.circular(18);
+    return Material(
+      color: embedded ? Colors.transparent : surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: embedded
+            ? BorderSide.none
+            : const BorderSide(color: Color(0xffE2E6EE)),
+      ),
+      child: InkWell(
         onTap: onEdit,
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: lavender,
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        borderRadius: radius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Row(
             children: [
-              const Icon(
-                Icons.person_add_alt_1_outlined,
-                color: lime,
-                size: 28,
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: lavender,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  p == null
+                      ? Icons.person_add_alt_1_outlined
+                      : Icons.person_outline_rounded,
+                  color: lime,
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                '학생 정보를 등록해 주세요',
-                style: TextStyle(
-                  color: text,
-                  fontSize: 18,
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      body,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: mute, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                p == null ? '등록' : '수정',
+                style: const TextStyle(
+                  color: lime,
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 5),
-              const Text(
-                '지역, 학교, 관심 과목과 학습 수준을 입력하면 맞춤 학원 추천을 시작합니다.',
-                style: TextStyle(color: mute, fontSize: 11, height: 1.45),
-              ),
-              const SizedBox(height: 14),
-              const Row(
-                children: [
-                  Text(
-                    '학생 정보 입력',
-                    style: TextStyle(color: lime, fontWeight: FontWeight.w600),
-                  ),
-                  Spacer(),
-                  Icon(Icons.arrow_forward_rounded, color: lime),
-                ],
-              ),
+              const SizedBox(width: 2),
+              const Icon(Icons.chevron_right_rounded, color: mute, size: 18),
             ],
           ),
         ),
-      );
-    }
-    final p = profile!;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xffE2E6EE)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  p.name,
-                  style: const TextStyle(
-                    color: text,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_outlined, color: mute, size: 20),
-              ),
-            ],
-          ),
-          Text(
-            '${p.school} ${p.grade} | ${p.region}',
-            style: const TextStyle(color: mute, fontSize: 11),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              color: mist,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Column(
-              children: [
-                _ProfileInfo('관심 과목', p.subjects.join('  ·  '), lime),
-                const SizedBox(height: 9),
-                _ProfileInfo('학습 수준', p.level, text),
-                const SizedBox(height: 9),
-                _ProfileInfo(
-                  '학원 조건',
-                  p.academyCondition.isEmpty
-                      ? '입력한 조건으로 추천'
-                      : p.academyCondition,
-                  mute,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          FilledButton(
-            onPressed: onEdit,
-            style: FilledButton.styleFrom(
-              backgroundColor: lime,
-              foregroundColor: navy,
-              minimumSize: const Size.fromHeight(48),
-            ),
-            child: const Text(
-              '맞춤 학원 추천받기',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
       ),
     );
   }
-}
-
-class _ProfileInfo extends StatelessWidget {
-  final String label, value;
-  final Color valueColor;
-  const _ProfileInfo(this.label, this.value, this.valueColor);
-  @override
-  Widget build(BuildContext c) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SizedBox(
-        width: 65,
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: mute,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      Expanded(
-        child: Text(
-          value,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    ],
-  );
 }
 
 class AcademyMatchForm extends StatefulWidget {
@@ -1472,24 +1401,38 @@ class _Quick extends StatelessWidget {
   final IconData icon;
   final String text;
   final VoidCallback tap;
-  const _Quick(this.icon, this.text, this.tap);
+  final bool dark;
+
+  const _Quick(this.icon, this.text, this.tap, {this.dark = true});
+
   @override
   Widget build(BuildContext c) => Expanded(
     child: InkWell(
       onTap: tap,
+      borderRadius: BorderRadius.circular(14),
       child: Column(
         children: [
           Container(
-            width: 37,
-            height: 37,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xff4B5569)),
+              color: dark ? Colors.transparent : lavender,
+              border: Border.all(
+                color: dark ? const Color(0xff4B5569) : const Color(0xffD7E3FF),
+              ),
             ),
-            child: Icon(icon, color: Colors.white, size: 19),
+            child: Icon(icon, color: dark ? Colors.white : lime, size: 18),
           ),
-          const SizedBox(height: 5),
-          Text(text, style: const TextStyle(color: Colors.white, fontSize: 10)),
+          const SizedBox(height: 6),
+          Text(
+            text,
+            style: TextStyle(
+              color: dark ? Colors.white : const Color(0xff14161B),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     ),
