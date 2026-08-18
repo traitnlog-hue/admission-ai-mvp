@@ -34,7 +34,7 @@ class _LevelTestState extends State<LevelTest> {
             'GACHI LEVEL',
             style: TextStyle(
               color: lime,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               letterSpacing: 1,
             ),
           ),
@@ -44,7 +44,7 @@ class _LevelTestState extends State<LevelTest> {
             style: TextStyle(
               color: text,
               fontSize: 32,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               height: 1.12,
             ),
           ),
@@ -78,7 +78,7 @@ class _LevelTestState extends State<LevelTest> {
                     selectedColor: lime,
                     labelStyle: TextStyle(
                       color: subject == value ? Colors.white : text,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                     onSelected: (_) => setState(() => subject = value),
                   ),
@@ -98,7 +98,7 @@ class _LevelTestState extends State<LevelTest> {
               children: [
                 Text(
                   '응시 전 확인',
-                  style: TextStyle(color: text, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: text, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: 9),
                 Text(
@@ -121,7 +121,7 @@ class _LevelTestState extends State<LevelTest> {
             ),
             child: Text(
               '$grade $subject 진단 시작',
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -139,7 +139,7 @@ class _LevelTestState extends State<LevelTest> {
         foregroundColor: Colors.white,
         title: Text(
           '$grade $subject 진단평가',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         actions: [
           Padding(
@@ -147,7 +147,7 @@ class _LevelTestState extends State<LevelTest> {
             child: Center(
               child: Text(
                 '$answeredCount / 20',
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -162,7 +162,7 @@ class _LevelTestState extends State<LevelTest> {
                 '제1교시 · $subject',
                 style: const TextStyle(
                   color: text,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const Spacer(),
@@ -211,7 +211,7 @@ class _LevelTestState extends State<LevelTest> {
                         '$step',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -221,7 +221,7 @@ class _LevelTestState extends State<LevelTest> {
                       style: const TextStyle(
                         color: lime,
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -233,7 +233,7 @@ class _LevelTestState extends State<LevelTest> {
                     color: text,
                     fontSize: 18,
                     height: 1.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -310,7 +310,7 @@ class _LevelTestState extends State<LevelTest> {
                     style: TextStyle(
                       color: step == index + 1 ? Colors.white : text,
                       fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -342,7 +342,7 @@ class _LevelTestState extends State<LevelTest> {
                   ),
                   child: Text(
                     step == 20 ? '답안 제출' : '다음 문제',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -384,7 +384,7 @@ class _LevelTestState extends State<LevelTest> {
         foregroundColor: text,
         title: const Text(
           '진단 결과',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       body: ListView(
@@ -403,7 +403,7 @@ class _LevelTestState extends State<LevelTest> {
                   '$grade · $subject',
                   style: const TextStyle(
                     color: Color(0xffAFC5FF),
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 13),
@@ -412,7 +412,7 @@ class _LevelTestState extends State<LevelTest> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 48,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
@@ -428,7 +428,7 @@ class _LevelTestState extends State<LevelTest> {
             style: TextStyle(
               color: text,
               fontSize: 19,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 10),
@@ -452,7 +452,7 @@ class _LevelTestState extends State<LevelTest> {
                           entry.key,
                           style: const TextStyle(
                             color: text,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -476,7 +476,7 @@ class _LevelTestState extends State<LevelTest> {
               style: const TextStyle(
                 color: text,
                 height: 1.55,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -493,7 +493,7 @@ class _LevelTestState extends State<LevelTest> {
             ),
             child: const Text(
               '다른 과목 진단하기',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(height: 8),

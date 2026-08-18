@@ -10,6 +10,7 @@ import 'level_test_data.dart';
 import 'study_plan_models.dart';
 
 part 'home_experience.dart';
+part 'explore_experience.dart';
 part 'level_test_experience.dart';
 
 const navy = Color(0xff101114),
@@ -34,19 +35,19 @@ class GachiApp extends StatelessWidget {
         headlineLarge: TextStyle(
           fontSize: 34,
           height: 1.12,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           letterSpacing: -1.4,
         ),
         headlineMedium: TextStyle(
           fontSize: 28,
           height: 1.18,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           letterSpacing: -1.1,
         ),
         titleLarge: TextStyle(
           fontSize: 20,
           height: 1.3,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           letterSpacing: -.5,
         ),
         titleMedium: TextStyle(
@@ -76,10 +77,26 @@ class Shell extends StatefulWidget {
 
 class _ShellState extends State<Shell> {
   int index = 0;
-  final pages = const [Home(), Explore(), Community(), Coach(), Profile()];
+  List<Widget> get pages => [
+    const Home(),
+    Explore(onOpenCoach: () => setState(() => index = 3)),
+    const Community(),
+    const Coach(),
+    const Profile(),
+  ];
   @override
   Widget build(BuildContext c) => Scaffold(
     body: SafeArea(child: pages[index]),
+    floatingActionButton: FloatingActionButton.extended(
+      onPressed: () => Navigator.push(
+        c,
+        MaterialPageRoute(builder: (_) => const ChatAssistantPage()),
+      ),
+      backgroundColor: lime,
+      foregroundColor: Colors.white,
+      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 19),
+      label: const Text('AI 챗봇'),
+    ),
     bottomNavigationBar: SafeArea(
       top: false,
       child: Container(
@@ -108,12 +125,12 @@ class _ShellState extends State<Shell> {
             ),
           ),
           child: NavigationBar(
-            height: 66,
+            height: 74,
             backgroundColor: Colors.transparent,
             indicatorColor: lime,
             onDestinationSelected: (i) => setState(() => index = i),
             selectedIndex: index,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             destinations: const [
               NavigationDestination(
                 icon: Icon(Icons.grid_view_rounded),
@@ -156,7 +173,7 @@ class LegacyHome extends StatelessWidget {
         style: TextStyle(
           color: text,
           fontSize: 28,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           letterSpacing: -1,
         ),
       ),
@@ -201,7 +218,7 @@ class _Top extends StatelessWidget {
         backgroundColor: lavender,
         child: Text(
           '지',
-          style: TextStyle(color: navy, fontWeight: FontWeight.w800),
+          style: TextStyle(color: navy, fontWeight: FontWeight.w600),
         ),
       ),
     ],
@@ -222,7 +239,7 @@ class _Logo extends StatelessWidget {
             'G',
             style: TextStyle(
               color: navy,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
           ),
@@ -232,7 +249,7 @@ class _Logo extends StatelessWidget {
       Text(
         'GACHI',
         style: TextStyle(
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           letterSpacing: 1.8,
           color: text,
         ),
@@ -278,7 +295,7 @@ class _HeroCard extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 10,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 1.1,
               ),
             ),
@@ -293,7 +310,7 @@ class _HeroCard extends StatelessWidget {
             color: Colors.white,
             fontSize: 31,
             height: 1.07,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
             letterSpacing: -1.5,
           ),
         ),
@@ -323,7 +340,7 @@ class _HeroCard extends StatelessWidget {
               '15 min',
               style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
             ),
@@ -353,7 +370,7 @@ class _Metric extends StatelessWidget {
           style: const TextStyle(
             fontSize: 9,
             color: mute,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             letterSpacing: .8,
           ),
         ),
@@ -363,7 +380,7 @@ class _Metric extends StatelessWidget {
           style: TextStyle(
             fontSize: 26,
             color: accent,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Text(sub, style: const TextStyle(fontSize: 10, color: mute)),
@@ -383,7 +400,7 @@ class _Section extends StatelessWidget {
         style: const TextStyle(
           color: text,
           fontSize: 18,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
       ),
       const Spacer(),
@@ -392,7 +409,7 @@ class _Section extends StatelessWidget {
         style: TextStyle(
           color: lime,
           fontSize: 11,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     ],
@@ -426,7 +443,7 @@ class _FocusCard extends StatelessWidget {
             children: [
               Text(
                 '수학 · 기하 응용',
-                style: TextStyle(color: text, fontWeight: FontWeight.w800),
+                style: TextStyle(color: text, fontWeight: FontWeight.w600),
               ),
               SizedBox(height: 4),
               Text(
@@ -493,7 +510,7 @@ class _Discover extends StatelessWidget {
           style: TextStyle(
             color: color,
             fontSize: 9,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 4),
@@ -501,7 +518,7 @@ class _Discover extends StatelessWidget {
           title,
           style: const TextStyle(
             color: text,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             height: 1.25,
           ),
         ),
@@ -527,8 +544,14 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
       Row(
         children: [
           Text(
-            academyProfile == null ? '나의 진학 준비' : '${academyProfile!.school} · ${academyProfile!.grade}',
-            style: const TextStyle(color: text, fontSize: 21, fontWeight: FontWeight.w800),
+            academyProfile == null
+                ? '나의 진학 준비'
+                : '${academyProfile!.school} · ${academyProfile!.grade}',
+            style: const TextStyle(
+              color: text,
+              fontSize: 21,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const Spacer(),
           TextButton.icon(
@@ -543,20 +566,36 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
             },
             icon: const Icon(Icons.edit_outlined, size: 14),
             label: Text(academyProfile == null ? '학생 정보 입력' : '정보 수정'),
-            style: TextButton.styleFrom(foregroundColor: lime, textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+            style: TextButton.styleFrom(
+              foregroundColor: lime,
+              textStyle: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
       const SizedBox(height: 7),
       Text(
-        academyProfile == null ? '학생 정보를 등록하면 입시 전략과 맞춤 학원 추천을 시작할 수 있어요.' : '${academyProfile!.region} · ${academyProfile!.subjects.join(' · ')} 기준으로 입시 전략을 준비하고 있어요.',
+        academyProfile == null
+            ? '학생 정보를 등록하면 입시 전략과 맞춤 학원 추천을 시작할 수 있어요.'
+            : '${academyProfile!.region} · ${academyProfile!.subjects.join(' · ')} 기준으로 입시 전략을 준비하고 있어요.',
         style: const TextStyle(color: mute, fontSize: 12, height: 1.5),
       ),
       const SizedBox(height: 14),
-      _StudentProfileCard(profile: academyProfile, onEdit: () async {
-        final profile = await Navigator.push<AcademyStudentProfile>(c, MaterialPageRoute(builder: (_) => AcademyMatchForm(initial: academyProfile)));
-        if (profile != null) setState(() => academyProfile = profile);
-      }),
+      _StudentProfileCard(
+        profile: academyProfile,
+        onEdit: () async {
+          final profile = await Navigator.push<AcademyStudentProfile>(
+            c,
+            MaterialPageRoute(
+              builder: (_) => AcademyMatchForm(initial: academyProfile),
+            ),
+          );
+          if (profile != null) setState(() => academyProfile = profile);
+        },
+      ),
       const SizedBox(height: 15),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -601,7 +640,7 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
             style: TextStyle(
               color: text,
               fontSize: 19,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const Spacer(),
@@ -610,7 +649,7 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
             style: TextStyle(
               color: lime,
               fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -624,7 +663,7 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
         style: TextStyle(
           color: text,
           fontSize: 19,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
       ),
       const SizedBox(height: 10),
@@ -643,7 +682,7 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
               style: TextStyle(
                 color: coral,
                 fontSize: 10,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 1,
               ),
             ),
@@ -653,7 +692,7 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
               style: TextStyle(
                 color: text,
                 fontSize: 16,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
             SizedBox(height: 6),
@@ -676,25 +715,184 @@ class AcademyStudentProfile {
   final List<String> subjects;
   final String level;
   final String academyCondition;
-  const AcademyStudentProfile({required this.name, required this.region, required this.school, required this.grade, required this.subjects, required this.level, required this.academyCondition});
+  const AcademyStudentProfile({
+    required this.name,
+    required this.region,
+    required this.school,
+    required this.grade,
+    required this.subjects,
+    required this.level,
+    required this.academyCondition,
+  });
 }
 
 class _StudentProfileCard extends StatelessWidget {
   final AcademyStudentProfile? profile;
   final VoidCallback onEdit;
   const _StudentProfileCard({required this.profile, required this.onEdit});
-  @override Widget build(BuildContext c) {
-    if (profile == null) return InkWell(onTap: onEdit, borderRadius: BorderRadius.circular(22), child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: lavender, borderRadius: BorderRadius.circular(22)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.person_add_alt_1_outlined, color: lime, size: 28), const SizedBox(height: 12), const Text('학생 정보를 등록해 주세요', style: TextStyle(color: text, fontSize: 18, fontWeight: FontWeight.w800)), const SizedBox(height: 5), const Text('지역, 학교, 관심 과목과 학습 수준을 입력하면 맞춤 학원 추천을 시작합니다.', style: TextStyle(color: mute, fontSize: 11, height: 1.45)), const SizedBox(height: 14), const Row(children: [Text('학생 정보 입력', style: TextStyle(color: lime, fontWeight: FontWeight.w800)), Spacer(), Icon(Icons.arrow_forward_rounded, color: lime)])])));
+  @override
+  Widget build(BuildContext c) {
+    if (profile == null) {
+      return InkWell(
+        onTap: onEdit,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: lavender,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.person_add_alt_1_outlined,
+                color: lime,
+                size: 28,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '학생 정보를 등록해 주세요',
+                style: TextStyle(
+                  color: text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 5),
+              const Text(
+                '지역, 학교, 관심 과목과 학습 수준을 입력하면 맞춤 학원 추천을 시작합니다.',
+                style: TextStyle(color: mute, fontSize: 11, height: 1.45),
+              ),
+              const SizedBox(height: 14),
+              const Row(
+                children: [
+                  Text(
+                    '학생 정보 입력',
+                    style: TextStyle(color: lime, fontWeight: FontWeight.w600),
+                  ),
+                  Spacer(),
+                  Icon(Icons.arrow_forward_rounded, color: lime),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final p = profile!;
-    return Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xffE2E6EE))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Expanded(child: Text(p.name, style: const TextStyle(color: text, fontSize: 18, fontWeight: FontWeight.w800))), IconButton(onPressed: onEdit, icon: const Icon(Icons.edit_outlined, color: mute, size: 20))]), Text('${p.school} ${p.grade} | ${p.region}', style: const TextStyle(color: mute, fontSize: 11)), const SizedBox(height: 14), Container(padding: const EdgeInsets.all(13), decoration: BoxDecoration(color: mist, borderRadius: BorderRadius.circular(15)), child: Column(children: [_ProfileInfo('관심 과목', p.subjects.join('  ·  '), lime), const SizedBox(height: 9), _ProfileInfo('학습 수준', p.level, text), const SizedBox(height: 9), _ProfileInfo('학원 조건', p.academyCondition.isEmpty ? '입력한 조건으로 추천' : p.academyCondition, mute)])), const SizedBox(height: 14), FilledButton(onPressed: onEdit, style: FilledButton.styleFrom(backgroundColor: lime, foregroundColor: navy, minimumSize: const Size.fromHeight(48)), child: const Text('맞춤 학원 추천받기', style: TextStyle(fontWeight: FontWeight.w800))) ]));
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xffE2E6EE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  p.name,
+                  style: const TextStyle(
+                    color: text,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined, color: mute, size: 20),
+              ),
+            ],
+          ),
+          Text(
+            '${p.school} ${p.grade} | ${p.region}',
+            style: const TextStyle(color: mute, fontSize: 11),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: mist,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Column(
+              children: [
+                _ProfileInfo('관심 과목', p.subjects.join('  ·  '), lime),
+                const SizedBox(height: 9),
+                _ProfileInfo('학습 수준', p.level, text),
+                const SizedBox(height: 9),
+                _ProfileInfo(
+                  '학원 조건',
+                  p.academyCondition.isEmpty
+                      ? '입력한 조건으로 추천'
+                      : p.academyCondition,
+                  mute,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: onEdit,
+            style: FilledButton.styleFrom(
+              backgroundColor: lime,
+              foregroundColor: navy,
+              minimumSize: const Size.fromHeight(48),
+            ),
+            child: const Text(
+              '맞춤 학원 추천받기',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
-class _ProfileInfo extends StatelessWidget { final String label, value; final Color valueColor; const _ProfileInfo(this.label, this.value, this.valueColor); @override Widget build(BuildContext c) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 65, child: Text(label, style: const TextStyle(color: mute, fontSize: 11, fontWeight: FontWeight.w700))), Expanded(child: Text(value, style: TextStyle(color: valueColor, fontSize: 11, fontWeight: FontWeight.w700)))]); }
+
+class _ProfileInfo extends StatelessWidget {
+  final String label, value;
+  final Color valueColor;
+  const _ProfileInfo(this.label, this.value, this.valueColor);
+  @override
+  Widget build(BuildContext c) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(
+        width: 65,
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: mute,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      Expanded(
+        child: Text(
+          value,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
 class AcademyMatchForm extends StatefulWidget {
   final AcademyStudentProfile? initial;
   const AcademyMatchForm({super.key, this.initial});
-  @override State<AcademyMatchForm> createState() => _AcademyMatchFormState();
+  @override
+  State<AcademyMatchForm> createState() => _AcademyMatchFormState();
 }
 
 class _AcademyMatchFormState extends State<AcademyMatchForm> {
@@ -705,68 +903,441 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
   String grade = '고2';
   String level = '개념은 안정적, 심화 보완 필요';
   late Set<String> subjects;
-  final regions = const ['서울 강남구', '서울 서초구', '서울 송파구', '서울 양천구', '서울 노원구', '서울 마포구', '서울 성북구', '서울 동작구', '기타 지역'];
+  final regions = const [
+    '서울 강남구',
+    '서울 서초구',
+    '서울 송파구',
+    '서울 양천구',
+    '서울 노원구',
+    '서울 마포구',
+    '서울 성북구',
+    '서울 동작구',
+    '기타 지역',
+  ];
   final grades = const ['중1', '중2', '중3', '고1', '고2', '고3'];
   final levels = const ['기초부터 다시', '개념은 안정적, 심화 보완 필요', '상위권 심화·실전 중심'];
   final subjectOptions = const ['수학', '영어', '국어', '과학', '학생부·입시'];
 
-  @override void initState() { super.initState(); final p = widget.initial; name = TextEditingController(text: p?.name ?? ''); school = TextEditingController(text: p?.school ?? ''); academyCondition = TextEditingController(text: p?.academyCondition ?? ''); region = p?.region ?? region; grade = p?.grade ?? grade; level = p?.level ?? level; subjects = {...(p?.subjects ?? ['수학', '학생부·입시'])}; }
-  @override void dispose() { name.dispose(); school.dispose(); academyCondition.dispose(); super.dispose(); }
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.initial;
+    name = TextEditingController(text: p?.name ?? '');
+    school = TextEditingController(text: p?.school ?? '');
+    academyCondition = TextEditingController(text: p?.academyCondition ?? '');
+    region = p?.region ?? region;
+    grade = p?.grade ?? grade;
+    level = p?.level ?? level;
+    subjects = {
+      ...(p?.subjects ?? ['수학', '학생부·입시']),
+    };
+  }
+
+  @override
+  void dispose() {
+    name.dispose();
+    school.dispose();
+    academyCondition.dispose();
+    super.dispose();
+  }
+
   Future<void> next() async {
-    if (name.text.trim().isEmpty || school.text.trim().isEmpty || subjects.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이름, 학교, 관심 과목을 입력해 주세요.'))); return; }
-    final profile = AcademyStudentProfile(name: name.text.trim(), region: region, school: school.text.trim(), grade: grade, subjects: subjects.toList(), level: level, academyCondition: academyCondition.text.trim());
+    if (name.text.trim().isEmpty ||
+        school.text.trim().isEmpty ||
+        subjects.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이름, 학교, 관심 과목을 입력해 주세요.')));
+      return;
+    }
+    final profile = AcademyStudentProfile(
+      name: name.text.trim(),
+      region: region,
+      school: school.text.trim(),
+      grade: grade,
+      subjects: subjects.toList(),
+      level: level,
+      academyCondition: academyCondition.text.trim(),
+    );
     List<Map<String, dynamic>> matches = [];
     try {
-      final response = await http.post(Uri.parse('http://127.0.0.1:8000/api/academy-recommendations'), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'region': profile.region, 'grade': profile.grade, 'subjects': profile.subjects, 'level': profile.level})).timeout(const Duration(seconds: 4));
-      if (response.statusCode == 200) matches = (jsonDecode(response.body)['items'] as List).cast<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+      final response = await http
+          .post(
+            Uri.parse('http://127.0.0.1:8000/api/academy-recommendations'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'region': profile.region,
+              'grade': profile.grade,
+              'subjects': profile.subjects,
+              'level': profile.level,
+            }),
+          )
+          .timeout(const Duration(seconds: 4));
+      if (response.statusCode == 200) {
+        matches = (jsonDecode(response.body)['items'] as List)
+            .cast<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
     } catch (_) {}
     if (!mounted) return;
-    final saved = await Navigator.push<AcademyStudentProfile>(context, MaterialPageRoute(builder: (_) => AcademyMatchResult(profile: profile, matches: matches)));
+    final saved = await Navigator.push<AcademyStudentProfile>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AcademyMatchResult(profile: profile, matches: matches),
+      ),
+    );
     if (saved != null && mounted) Navigator.pop(context, saved);
   }
-  @override Widget build(BuildContext c) => Scaffold(
+
+  @override
+  Widget build(BuildContext c) => Scaffold(
     backgroundColor: mist,
-    appBar: AppBar(backgroundColor: mist, title: const Text('맞춤 학원 찾기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
-    body: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 28), children: [
-      const Text('학생 정보를 알려주세요.', style: TextStyle(color: text, fontSize: 26, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 5), const Text('통학권과 학습 상황에 맞는 추천 기준을 만들어요.', style: TextStyle(color: mute, fontSize: 12)), const SizedBox(height: 22),
-      const _FormLabel('이름'), TextField(controller: name, decoration: _inputDecoration(hint: '예: 이지희')), const SizedBox(height: 17),
-      const _FormLabel('지역'), DropdownButtonFormField<String>(initialValue: region, decoration: _inputDecoration(), items: regions.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => region = value!)), const SizedBox(height: 17),
-      const _FormLabel('학교'), TextField(controller: school, decoration: _inputDecoration(hint: '예: ○○고등학교')), const SizedBox(height: 17),
-      const _FormLabel('학년'), DropdownButtonFormField<String>(initialValue: grade, decoration: _inputDecoration(), items: grades.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => grade = value!)), const SizedBox(height: 17),
-      const _FormLabel('관심 과목 · 필요한 영역'), Wrap(spacing: 7, runSpacing: 7, children: subjectOptions.map((item) => FilterChip(label: Text(item), selected: subjects.contains(item), selectedColor: lavender, checkmarkColor: lime, labelStyle: TextStyle(fontSize: 12, color: subjects.contains(item) ? lime : text, fontWeight: FontWeight.w700), onSelected: (selected) => setState(() => selected ? subjects.add(item) : subjects.remove(item)))).toList()), const SizedBox(height: 17),
-      const _FormLabel('현재 학습 수준'), RadioGroup<String>(groupValue: level, onChanged: (value) => setState(() => level = value!), child: Column(children: levels.map((item) => RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, value: item, activeColor: lime, title: Text(item, style: const TextStyle(fontSize: 12, color: text)))).toList())),
-      const SizedBox(height: 10), const _FormLabel('찾는 학원 조건'), TextField(controller: academyCondition, maxLines: 2, decoration: _inputDecoration(hint: '예: 소수정예, 주말 수업, 내신 대비')), 
-      const SizedBox(height: 15), FilledButton(onPressed: next, style: FilledButton.styleFrom(backgroundColor: lime, foregroundColor: navy, minimumSize: const Size.fromHeight(56)), child: const Text('맞춤 학원 추천 보기', style: TextStyle(fontWeight: FontWeight.w800))),
-    ]),
+    appBar: AppBar(
+      backgroundColor: mist,
+      title: const Text(
+        '맞춤 학원 찾기',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    ),
+    body: ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      children: [
+        const Text(
+          '학생 정보를 알려주세요.',
+          style: TextStyle(
+            color: text,
+            fontSize: 26,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 5),
+        const Text(
+          '통학권과 학습 상황에 맞는 추천 기준을 만들어요.',
+          style: TextStyle(color: mute, fontSize: 12),
+        ),
+        const SizedBox(height: 22),
+        const _FormLabel('이름'),
+        TextField(
+          controller: name,
+          decoration: _inputDecoration(hint: '예: 이지희'),
+        ),
+        const SizedBox(height: 17),
+        const _FormLabel('지역'),
+        DropdownButtonFormField<String>(
+          initialValue: region,
+          decoration: _inputDecoration(),
+          items: regions
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
+          onChanged: (value) => setState(() => region = value!),
+        ),
+        const SizedBox(height: 17),
+        const _FormLabel('학교'),
+        TextField(
+          controller: school,
+          decoration: _inputDecoration(hint: '예: ○○고등학교'),
+        ),
+        const SizedBox(height: 17),
+        const _FormLabel('학년'),
+        DropdownButtonFormField<String>(
+          initialValue: grade,
+          decoration: _inputDecoration(),
+          items: grades
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
+          onChanged: (value) => setState(() => grade = value!),
+        ),
+        const SizedBox(height: 17),
+        const _FormLabel('관심 과목 · 필요한 영역'),
+        Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: subjectOptions
+              .map(
+                (item) => FilterChip(
+                  label: Text(item),
+                  selected: subjects.contains(item),
+                  selectedColor: lavender,
+                  checkmarkColor: lime,
+                  labelStyle: TextStyle(
+                    fontSize: 12,
+                    color: subjects.contains(item) ? lime : text,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  onSelected: (selected) => setState(
+                    () => selected ? subjects.add(item) : subjects.remove(item),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 17),
+        const _FormLabel('현재 학습 수준'),
+        RadioGroup<String>(
+          groupValue: level,
+          onChanged: (value) => setState(() => level = value!),
+          child: Column(
+            children: levels
+                .map(
+                  (item) => RadioListTile<String>(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    value: item,
+                    activeColor: lime,
+                    title: Text(
+                      item,
+                      style: const TextStyle(fontSize: 12, color: text),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        const _FormLabel('찾는 학원 조건'),
+        TextField(
+          controller: academyCondition,
+          maxLines: 2,
+          decoration: _inputDecoration(hint: '예: 소수정예, 주말 수업, 내신 대비'),
+        ),
+        const SizedBox(height: 15),
+        FilledButton(
+          onPressed: next,
+          style: FilledButton.styleFrom(
+            backgroundColor: lime,
+            foregroundColor: navy,
+            minimumSize: const Size.fromHeight(56),
+          ),
+          child: const Text(
+            '맞춤 학원 추천 보기',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
   );
 }
 
-class _FormLabel extends StatelessWidget { final String label; const _FormLabel(this.label); @override Widget build(BuildContext c) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(label, style: const TextStyle(color: text, fontWeight: FontWeight.w800))); }
-InputDecoration _inputDecoration({String? hint}) => InputDecoration(hintText: hint, hintStyle: const TextStyle(color: mute, fontSize: 12), filled: true, fillColor: surface, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xffE2E6EE))), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xffE2E6EE))));
+class _FormLabel extends StatelessWidget {
+  final String label;
+  const _FormLabel(this.label);
+  @override
+  Widget build(BuildContext c) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      label,
+      style: const TextStyle(color: text, fontWeight: FontWeight.w600),
+    ),
+  );
+}
+
+InputDecoration _inputDecoration({String? hint}) => InputDecoration(
+  hintText: hint,
+  hintStyle: const TextStyle(color: mute, fontSize: 12),
+  filled: true,
+  fillColor: surface,
+  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(14),
+    borderSide: const BorderSide(color: Color(0xffE2E6EE)),
+  ),
+  enabledBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(14),
+    borderSide: const BorderSide(color: Color(0xffE2E6EE)),
+  ),
+);
 
 class AcademyMatchResult extends StatelessWidget {
   final AcademyStudentProfile profile;
   final List<Map<String, dynamic>> matches;
-  const AcademyMatchResult({super.key, required this.profile, this.matches = const []});
-  @override Widget build(BuildContext c) {
+  const AcademyMatchResult({
+    super.key,
+    required this.profile,
+    this.matches = const [],
+  });
+  @override
+  Widget build(BuildContext c) {
     final subject = profile.subjects.first;
-    final options = matches.isEmpty ? [
-      ('통학 중심 $subject 전문반', '${profile.region} 기준 30분 이내 통학권 · ${profile.grade} ${profile.level}', '주 2~3회 · 레벨 진단 후 반 배정'),
-      ('$subject 심화·내신 관리반', '${profile.school} 재학생의 내신 일정에 맞춘 소수정예 수업', '학교별 시험범위·오답 관리 확인'),
-      ('진학 전략 통합 컨설팅', '학생부·모의고사·희망 전공을 함께 보는 입시 관리', '상담 교사의 입시 데이터 출처 확인'),
-    ] : matches.take(3).map((item) => (item['name'] as String, '${item['region']} · ${item['address']}', '공식 교육청 공개정보 · 적합도 ${item['score']}점')).toList();
-    return Scaffold(backgroundColor: mist, appBar: AppBar(backgroundColor: mist, title: const Text('맞춤 학원 추천', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))), body: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 28), children: [
-      Text('${profile.school} 학생을 위한\n추천 기준', style: const TextStyle(color: text, fontSize: 26, height: 1.15, fontWeight: FontWeight.w900)), const SizedBox(height: 9),
-      Wrap(spacing: 6, runSpacing: 6, children: [profile.region, profile.grade, ...profile.subjects].map((item) => Chip(label: Text(item, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700)), backgroundColor: lavender, side: BorderSide.none)).toList()), const SizedBox(height: 17),
-      ...options.asMap().entries.map((entry) => _AcademyOption(rank: entry.key + 1, title: entry.value.$1, body: entry.value.$2, check: entry.value.$3)),
-      const SizedBox(height: 10), Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: const Color(0xffFFF0EA), borderRadius: BorderRadius.circular(17)), child: Text(matches.isEmpty ? '서버 연결 전 임시 추천입니다. 분석 서버 실행 후 서울교육청 공개 데이터를 기준으로 다시 조회하세요.' : '서울교육청 공개 학원·교습소 정보를 기준으로 한 결과입니다. 실제 수강료·시간표·모집 상태는 상담 전 재확인하세요.', style: const TextStyle(color: Color(0xffA84A2F), fontSize: 11, height: 1.5))),
-      const SizedBox(height: 14), OutlinedButton(onPressed: () => Navigator.pop(c, profile), style: OutlinedButton.styleFrom(foregroundColor: lime, minimumSize: const Size.fromHeight(52), side: const BorderSide(color: lime)), child: const Text('학생 정보 저장하고 홈으로', style: TextStyle(fontWeight: FontWeight.w800))),
-    ]));
+    final options = matches.isEmpty
+        ? [
+            (
+              '통학 중심 $subject 전문반',
+              '${profile.region} 기준 30분 이내 통학권 · ${profile.grade} ${profile.level}',
+              '주 2~3회 · 레벨 진단 후 반 배정',
+            ),
+            (
+              '$subject 심화·내신 관리반',
+              '${profile.school} 재학생의 내신 일정에 맞춘 소수정예 수업',
+              '학교별 시험범위·오답 관리 확인',
+            ),
+            (
+              '진학 전략 통합 컨설팅',
+              '학생부·모의고사·희망 전공을 함께 보는 입시 관리',
+              '상담 교사의 입시 데이터 출처 확인',
+            ),
+          ]
+        : matches
+              .take(3)
+              .map(
+                (item) => (
+                  item['name'] as String,
+                  '${item['region']} · ${item['address']}',
+                  '공식 교육청 공개정보 · 적합도 ${item['score']}점',
+                ),
+              )
+              .toList();
+    return Scaffold(
+      backgroundColor: mist,
+      appBar: AppBar(
+        backgroundColor: mist,
+        title: const Text(
+          '맞춤 학원 추천',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        children: [
+          Text(
+            '${profile.school} 학생을 위한\n추천 기준',
+            style: const TextStyle(
+              color: text,
+              fontSize: 26,
+              height: 1.15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 9),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [profile.region, profile.grade, ...profile.subjects]
+                .map(
+                  (item) => Chip(
+                    label: Text(
+                      item,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    backgroundColor: lavender,
+                    side: BorderSide.none,
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 17),
+          ...options.asMap().entries.map(
+            (entry) => _AcademyOption(
+              rank: entry.key + 1,
+              title: entry.value.$1,
+              body: entry.value.$2,
+              check: entry.value.$3,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: const Color(0xffFFF0EA),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: Text(
+              matches.isEmpty
+                  ? '서버 연결 전 임시 추천입니다. 분석 서버 실행 후 서울교육청 공개 데이터를 기준으로 다시 조회하세요.'
+                  : '서울교육청 공개 학원·교습소 정보를 기준으로 한 결과입니다. 실제 수강료·시간표·모집 상태는 상담 전 재확인하세요.',
+              style: const TextStyle(
+                color: Color(0xffA84A2F),
+                fontSize: 11,
+                height: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(c, profile),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: lime,
+              minimumSize: const Size.fromHeight(52),
+              side: const BorderSide(color: lime),
+            ),
+            child: const Text(
+              '학생 정보 저장하고 홈으로',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _AcademyOption extends StatelessWidget { final int rank; final String title, body, check; const _AcademyOption({required this.rank, required this.title, required this.body, required this.check}); @override Widget build(BuildContext c) => Container(margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(17), decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xffE2E6EE))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('MATCH $rank', style: const TextStyle(color: lime, fontSize: 10, fontWeight: FontWeight.w900)), const SizedBox(height: 6), Text(title, style: const TextStyle(color: text, fontSize: 16, fontWeight: FontWeight.w800)), const SizedBox(height: 5), Text(body, style: const TextStyle(color: mute, fontSize: 11, height: 1.45)), const SizedBox(height: 11), Row(children: [const Icon(Icons.check_circle_outline, color: lime, size: 15), const SizedBox(width: 5), Expanded(child: Text(check, style: const TextStyle(color: text, fontSize: 10, fontWeight: FontWeight.w700)))]),])); }
+class _AcademyOption extends StatelessWidget {
+  final int rank;
+  final String title, body, check;
+  const _AcademyOption({
+    required this.rank,
+    required this.title,
+    required this.body,
+    required this.check,
+  });
+  @override
+  Widget build(BuildContext c) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(17),
+    decoration: BoxDecoration(
+      color: surface,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xffE2E6EE)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'MATCH $rank',
+          style: const TextStyle(
+            color: lime,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          title,
+          style: const TextStyle(
+            color: text,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          body,
+          style: const TextStyle(color: mute, fontSize: 11, height: 1.45),
+        ),
+        const SizedBox(height: 11),
+        Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: lime, size: 15),
+            const SizedBox(width: 5),
+            Expanded(
+              child: Text(
+                check,
+                style: const TextStyle(
+                  color: text,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
 class _Quick extends StatelessWidget {
   final IconData icon;
@@ -823,7 +1394,7 @@ class _Plan extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(color: text, fontWeight: FontWeight.w800),
+              style: const TextStyle(color: text, fontWeight: FontWeight.w600),
             ),
             const Spacer(),
             Text(
@@ -849,8 +1420,8 @@ class _Plan extends StatelessWidget {
   );
 }
 
-class Explore extends StatelessWidget {
-  const Explore({super.key});
+class LegacyExplore extends StatelessWidget {
+  const LegacyExplore({super.key});
   @override
   Widget build(BuildContext c) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
@@ -862,12 +1433,12 @@ class Explore extends StatelessWidget {
         style: TextStyle(
           color: text,
           fontSize: 32,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           height: 1.05,
         ),
       ),
       const SizedBox(height: 22),
-      _Menu(
+      _LegacyMenu(
         'GACHI LEVEL',
         '15분 무료 학습 진단',
         Icons.bolt_rounded,
@@ -877,7 +1448,7 @@ class Explore extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const LevelTest()),
         ),
       ),
-      _Menu(
+      _LegacyMenu(
         'GACHI ADMISSION',
         '대입 전략과 현재 GAP 분석',
         Icons.north_east_rounded,
@@ -887,7 +1458,7 @@ class Explore extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const AdmissionForm()),
         ),
       ),
-      _Menu(
+      _LegacyMenu(
         'GACHI HIGH',
         '나에게 맞는 고교 환경 찾기',
         Icons.account_tree_outlined,
@@ -897,7 +1468,7 @@ class Explore extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const HighReport()),
         ),
       ),
-      _Menu(
+      _LegacyMenu(
         'COACH+',
         '전문가 컨설팅과 로드맵',
         Icons.auto_awesome_rounded,
@@ -911,12 +1482,12 @@ class Explore extends StatelessWidget {
   );
 }
 
-class _Menu extends StatelessWidget {
+class _LegacyMenu extends StatelessWidget {
   final String a, b;
   final IconData i;
   final Color col;
   final VoidCallback tap;
-  const _Menu(this.a, this.b, this.i, this.col, this.tap);
+  const _LegacyMenu(this.a, this.b, this.i, this.col, this.tap);
   @override
   Widget build(BuildContext c) => Padding(
     padding: const EdgeInsets.only(bottom: 11),
@@ -947,7 +1518,7 @@ class _Menu extends StatelessWidget {
                 children: [
                   Text(
                     a,
-                    style: TextStyle(color: text, fontWeight: FontWeight.w800),
+                    style: TextStyle(color: text, fontWeight: FontWeight.w600),
                   ),
                   Text(b, style: const TextStyle(color: mute, fontSize: 11)),
                 ],
@@ -972,7 +1543,7 @@ class Community extends StatelessWidget {
         style: TextStyle(
           color: text,
           fontSize: 30,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           height: 1.08,
         ),
       ),
@@ -1031,7 +1602,7 @@ class _Forum extends StatelessWidget {
           style: const TextStyle(
             color: text,
             fontSize: 17,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 6),
@@ -1054,54 +1625,182 @@ class Coach extends StatelessWidget {
     children: [
       const _Logo(),
       const SizedBox(height: 26),
-      Row(children: [
-        const Expanded(child: Text('COACH+', style: TextStyle(color: text, fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: -1))),
-        Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: lavender, borderRadius: BorderRadius.circular(20)), child: const Text('2027 대입', style: TextStyle(color: lime, fontSize: 11, fontWeight: FontWeight.w800))),
-      ]),
+      Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'COACH+',
+              style: TextStyle(
+                color: text,
+                fontSize: 30,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -1,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: lavender,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              '2027 대입',
+              style: TextStyle(
+                color: lime,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
       const SizedBox(height: 5),
-      const Text('성적과 학생부를 바탕으로 이번 주 입시 전략을 설계합니다.', style: TextStyle(color: mute, fontSize: 13)),
+      const Text(
+        '성적과 학생부를 바탕으로 이번 주 입시 전략을 설계합니다.',
+        style: TextStyle(color: mute, fontSize: 13),
+      ),
       const SizedBox(height: 18),
       Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: navy, borderRadius: BorderRadius.circular(25)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('ADMISSION SNAPSHOT', style: TextStyle(color: Color(0xffAFC5FF), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: .8)),
-          const SizedBox(height: 9),
-          const Text('대입 전략을\n새로 진단해볼까요?', style: TextStyle(color: Colors.white, fontSize: 25, height: 1.15, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 14),
-          FilledButton.icon(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => const CoachAdmissionIntake())), icon: const Icon(Icons.insights_outlined, size: 18), label: const Text('입시 전략 진단 시작'), style: FilledButton.styleFrom(backgroundColor: lime, foregroundColor: navy, padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12))),
-        ]),
+        decoration: BoxDecoration(
+          color: navy,
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'ADMISSION SNAPSHOT',
+              style: TextStyle(
+                color: Color(0xffAFC5FF),
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: .8,
+              ),
+            ),
+            const SizedBox(height: 9),
+            const Text(
+              '대입 전략을\n새로 진단해볼까요?',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 25,
+                height: 1.15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: () => Navigator.push(
+                c,
+                MaterialPageRoute(builder: (_) => const CoachAdmissionIntake()),
+              ),
+              icon: const Icon(Icons.insights_outlined, size: 18),
+              label: const Text('입시 전략 진단 시작'),
+              style: FilledButton.styleFrom(
+                backgroundColor: lime,
+                foregroundColor: navy,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       const SizedBox(height: 20),
-      const Text('COACH+가 함께 보는 항목', style: TextStyle(color: text, fontSize: 18, fontWeight: FontWeight.w800)),
+      const Text(
+        'COACH+가 함께 보는 항목',
+        style: TextStyle(
+          color: text,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
       const SizedBox(height: 10),
-      const _CoachFeature(Icons.school_outlined, '학생부 · 세특 분석', '탐구 흐름과 전공 연결성을 점검해요.'),
-      const _CoachFeature(Icons.auto_graph_rounded, '전형 적합도', '교과 · 학종 · 정시 · 논술 전략을 비교해요.'),
-      const _CoachFeature(Icons.route_outlined, '이번 주 Action Plan', '다음 시험과 학생부 보완의 우선순위를 정해요.'),
+      const _CoachFeature(
+        Icons.school_outlined,
+        '학생부 · 세특 분석',
+        '탐구 흐름과 전공 연결성을 점검해요.',
+      ),
+      const _CoachFeature(
+        Icons.auto_graph_rounded,
+        '전형 적합도',
+        '교과 · 학종 · 정시 · 논술 전략을 비교해요.',
+      ),
+      const _CoachFeature(
+        Icons.route_outlined,
+        '이번 주 Action Plan',
+        '다음 시험과 학생부 보완의 우선순위를 정해요.',
+      ),
       const SizedBox(height: 7),
-      const Text('대학별 지원 판단은 해당 연도 공식 모집요강과 입시결과를 확인한 뒤 제공됩니다.', style: TextStyle(color: mute, fontSize: 10, height: 1.5)),
+      const Text(
+        '대학별 지원 판단은 해당 연도 공식 모집요강과 입시결과를 확인한 뒤 제공됩니다.',
+        style: TextStyle(color: mute, fontSize: 10, height: 1.5),
+      ),
     ],
   );
 }
 
 class _CoachFeature extends StatelessWidget {
-  final IconData icon; final String title; final String body;
+  final IconData icon;
+  final String title;
+  final String body;
   const _CoachFeature(this.icon, this.title, this.body);
-  @override Widget build(BuildContext c) => Container(
-    margin: const EdgeInsets.only(bottom: 9), padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xffE6E9EF))),
-    child: Row(children: [Container(width: 40, height: 40, decoration: BoxDecoration(color: lavender, borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: lime, size: 21)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 3), Text(body, style: const TextStyle(color: mute, fontSize: 11))]))]),
+  @override
+  Widget build(BuildContext c) => Container(
+    margin: const EdgeInsets.only(bottom: 9),
+    padding: const EdgeInsets.all(15),
+    decoration: BoxDecoration(
+      color: surface,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: const Color(0xffE6E9EF)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: lavender,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: lime, size: 21),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: text,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(body, style: const TextStyle(color: mute, fontSize: 11)),
+            ],
+          ),
+        ),
+      ],
+    ),
   );
 }
 
 class CoachAdmissionIntake extends StatefulWidget {
   const CoachAdmissionIntake({super.key});
-  @override State<CoachAdmissionIntake> createState() => _CoachAdmissionIntakeState();
+  @override
+  State<CoachAdmissionIntake> createState() => _CoachAdmissionIntakeState();
 }
 
 class _CoachAdmissionIntakeState extends State<CoachAdmissionIntake> {
-  final record = TextEditingController(text: '정보 과목에서 알고리즘 효율성을 탐구하고, 프로그래밍 동아리에서 데이터 분석 프로젝트를 진행함.');
-  final school = [2.0, 1.5, 2.2, 2.3, 1.7];
+  final record = TextEditingController(
+    text: '정보 과목에서 알고리즘 효율성을 탐구하고, 프로그래밍 동아리에서 데이터 분석 프로젝트를 진행함.',
+  );
+  final school = [2.0, 1.5, 2.0, 2.5, 1.5];
   final mock = [2.0, 1.0, 2.0, 2.0];
   final majorsByUniversity = const {
     '서울대학교': ['컴퓨터공학부', '전기·정보공학부', '산업공학과', '수리과학부'],
@@ -1113,42 +1812,228 @@ class _CoachAdmissionIntakeState extends State<CoachAdmissionIntake> {
   String university = '서울대학교';
   String major = '컴퓨터공학부';
   bool loading = false;
-  @override void dispose() { record.dispose(); super.dispose(); }
+  @override
+  void dispose() {
+    record.dispose();
+    super.dispose();
+  }
+
   Future<void> submit() async {
     setState(() => loading = true);
-    final body = {'admission_year': 2027, 'grade': 2, 'major': major, 'target_university': university, 'school_grades': {'korean': school[0], 'math': school[1], 'english': school[2], 'social': school[3], 'science': school[4]}, 'mock_grades': {'korean': mock[0], 'math': mock[1], 'english': mock[2], 'inquiry': mock[3]}, 'record_text': record.text, 'ai_record_analysis': false};
+    final body = {
+      'admission_year': 2027,
+      'grade': 2,
+      'major': major,
+      'target_university': university,
+      'school_grades': {
+        'korean': school[0],
+        'math': school[1],
+        'english': school[2],
+        'social': school[3],
+        'science': school[4],
+      },
+      'mock_grades': {
+        'korean': mock[0],
+        'math': mock[1],
+        'english': mock[2],
+        'inquiry': mock[3],
+      },
+      'record_text': record.text,
+      'ai_record_analysis': false,
+    };
     Map<String, dynamic> result;
     try {
-      final res = await http.post(Uri.parse('http://127.0.0.1:8000/api/analyze'), headers: {'Content-Type': 'application/json'}, body: jsonEncode(body)).timeout(const Duration(seconds: 4));
-      if (res.statusCode != 200) throw Exception(); result = jsonDecode(res.body) as Map<String, dynamic>;
-    } catch (_) { result = _fallback(body); }
-    if (!mounted) return; setState(() => loading = false); Navigator.push(context, MaterialPageRoute(builder: (_) => CoachAdmissionResult(data: result)));
+      final res = await http
+          .post(
+            Uri.parse('http://127.0.0.1:8000/api/analyze'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 4));
+      if (res.statusCode != 200) throw Exception();
+      result = jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (_) {
+      result = _fallback(body);
+    }
+    if (!mounted) return;
+    setState(() => loading = false);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => CoachAdmissionResult(data: result)),
+    );
   }
+
   Map<String, dynamic> _fallback(Map<String, dynamic> input) {
-    final schoolAvg = school.reduce((a, b) => a + b) / 5; final mockAvg = mock.reduce((a, b) => a + b) / 4;
-    int score(double g) => (112.5 - g * 12.5).clamp(0, 100).round(); final academic = score(schoolAvg); final csat = score(mockAvg); final recordScore = record.text.length > 70 ? 76 : 62;
-    return {'major': input['major'], 'primary_strategy': csat >= academic ? '정시 중심 전략' : '학생부교과 중심 전략', 'primary_reason': csat >= academic ? '모의고사 경쟁력이 안정적입니다. 수능 실전 성과를 중심으로 설계하세요.' : '내신과 핵심교과 성취가 현재의 강점입니다.', 'secondary_strategy': '학생부종합 병행 전략', 'secondary_reason': '전공 탐구의 과정과 결과를 학생부에 더 구체적으로 연결하세요.', 'scores': [{'label':'학업역량','value':academic},{'label':'수능역량','value':csat},{'label':'과목선택','value':78},{'label':'학생부역량','value':recordScore}], 'risks':['대학별 수능최저와 교과 반영방법을 공식 모집요강에서 확인하세요.','전공 관련 탐구를 질문–과정–결과 구조로 세특에 남기세요.'], 'action_plan':'이번 주에는 취약 과목 오답을 정리하고, 다음 세특에 전공 탐구의 근거를 보완하세요.', 'offline':true};
+    final schoolAvg = school.reduce((a, b) => a + b) / 5;
+    final mockAvg = mock.reduce((a, b) => a + b) / 4;
+    int score(double g) => (112.5 - g * 12.5).clamp(0, 100).round();
+    final academic = score(schoolAvg);
+    final csat = score(mockAvg);
+    final recordScore = record.text.length > 70 ? 76 : 62;
+    return {
+      'major': input['major'],
+      'primary_strategy': csat >= academic ? '정시 중심 전략' : '학생부교과 중심 전략',
+      'primary_reason': csat >= academic
+          ? '모의고사 경쟁력이 안정적입니다. 수능 실전 성과를 중심으로 설계하세요.'
+          : '내신과 핵심교과 성취가 현재의 강점입니다.',
+      'secondary_strategy': '학생부종합 병행 전략',
+      'secondary_reason': '전공 탐구의 과정과 결과를 학생부에 더 구체적으로 연결하세요.',
+      'scores': [
+        {'label': '학업역량', 'value': academic},
+        {'label': '수능역량', 'value': csat},
+        {'label': '과목선택', 'value': 78},
+        {'label': '학생부역량', 'value': recordScore},
+      ],
+      'risks': [
+        '대학별 수능최저와 교과 반영방법을 공식 모집요강에서 확인하세요.',
+        '전공 관련 탐구를 질문–과정–결과 구조로 세특에 남기세요.',
+      ],
+      'action_plan': '이번 주에는 취약 과목 오답을 정리하고, 다음 세특에 전공 탐구의 근거를 보완하세요.',
+      'offline': true,
+    };
   }
-  @override Widget build(BuildContext c) => Scaffold(backgroundColor: mist, appBar: AppBar(backgroundColor: mist, title: const Text('COACH+ 입시 전략 진단', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))), body: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 28), children: [
-    const Text('현재 기록을 입력해 주세요.', style: TextStyle(color: text, fontSize: 25, fontWeight: FontWeight.w900)), const SizedBox(height: 5), const Text('공식 합격선이 아닌 개인 전략 진단 결과입니다.', style: TextStyle(color: mute, fontSize: 12)), const SizedBox(height: 20),
-    const Text('희망 대학교', style: TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 8),
-    DropdownButtonFormField<String>(initialValue: university, decoration: _inputDecoration(), items: majorsByUniversity.keys.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() { university = value!; major = majorsByUniversity[value]!.first; })), const SizedBox(height: 17),
-    const Text('희망 전공', style: TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 8),
-    DropdownButtonFormField<String>(key: ValueKey(university), initialValue: major, decoration: _inputDecoration(), items: majorsByUniversity[university]!.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: (value) => setState(() => major = value!)), const SizedBox(height: 5),
-    Text('$university $major 기준으로 전공 핵심교과와 학생부 연결성을 진단합니다.', style: const TextStyle(color: mute, fontSize: 10)), const SizedBox(height: 17),
-    const Text('내신 성적', style: TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 9), _GradeRow(labels: const ['국어','수학','영어','사회','과학'], values: school, onChanged: () => setState(() {})), const SizedBox(height: 17),
-    const Text('모의고사 성적', style: TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 9), _GradeRow(labels: const ['국어','수학','영어','탐구'], values: mock, onChanged: () => setState(() {})), const SizedBox(height: 17),
-    _Field('학생부 · 세특 · 활동', TextField(controller: record, maxLines: 5, decoration: const InputDecoration(hintText: '탐구, 세특, 동아리 활동을 입력하세요.'))), const SizedBox(height: 22),
-    FilledButton(onPressed: loading ? null : submit, style: FilledButton.styleFrom(backgroundColor: lime, foregroundColor: navy, minimumSize: const Size.fromHeight(56)), child: Text(loading ? '분석 중...' : '맞춤 전략 분석 시작', style: const TextStyle(fontWeight: FontWeight.w800))),
-  ]));
+
+  @override
+  Widget build(BuildContext c) => Scaffold(
+    backgroundColor: mist,
+    appBar: AppBar(
+      backgroundColor: mist,
+      title: const Text(
+        'GACHI 입시 전략 진단',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    ),
+    body: ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      children: [
+        const Text(
+          '현재 기록을 입력해 주세요.',
+          style: TextStyle(
+            color: text,
+            fontSize: 25,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 5),
+        const Text(
+          '공식 합격선이 아닌 개인 전략 진단 결과입니다.',
+          style: TextStyle(color: mute, fontSize: 12),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          '희망 대학교',
+          style: TextStyle(color: text, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: university,
+          decoration: _inputDecoration(),
+          items: majorsByUniversity.keys
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
+          onChanged: (value) => setState(() {
+            university = value!;
+            major = majorsByUniversity[value]!.first;
+          }),
+        ),
+        const SizedBox(height: 17),
+        const Text(
+          '희망 전공',
+          style: TextStyle(color: text, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          key: ValueKey(university),
+          initialValue: major,
+          decoration: _inputDecoration(),
+          items: majorsByUniversity[university]!
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
+          onChanged: (value) => setState(() => major = value!),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '$university $major 기준으로 전공 핵심교과와 학생부 연결성을 진단합니다.',
+          style: const TextStyle(color: mute, fontSize: 10),
+        ),
+        const SizedBox(height: 17),
+        const Text(
+          '내신 성적',
+          style: TextStyle(color: text, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 9),
+        _GradeRow(
+          labels: const ['국어', '수학', '영어', '사회', '과학'],
+          values: school,
+          onChanged: () => setState(() {}),
+        ),
+        const SizedBox(height: 17),
+        const Text(
+          '모의고사 성적',
+          style: TextStyle(color: text, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 9),
+        _GradeRow(
+          labels: const ['국어', '수학', '영어', '탐구'],
+          values: mock,
+          onChanged: () => setState(() {}),
+        ),
+        const SizedBox(height: 17),
+        _Field(
+          '학생부 · 세특 · 활동',
+          TextField(
+            controller: record,
+            maxLines: 5,
+            decoration: const InputDecoration(
+              hintText: '탐구, 세특, 동아리 활동을 입력하세요.',
+            ),
+          ),
+        ),
+        const SizedBox(height: 22),
+        FilledButton(
+          onPressed: loading ? null : submit,
+          style: FilledButton.styleFrom(
+            backgroundColor: lime,
+            foregroundColor: navy,
+            minimumSize: const Size.fromHeight(56),
+          ),
+          child: Text(
+            loading ? '분석 중...' : '맞춤 전략 분석 시작',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
-class _Field extends StatelessWidget { final String label; final Widget child; const _Field(this.label, this.child); @override Widget build(BuildContext c) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 8), child]); }
+class _Field extends StatelessWidget {
+  final String label;
+  final Widget child;
+  const _Field(this.label, this.child);
+  @override
+  Widget build(BuildContext c) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(color: text, fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 8),
+      child,
+    ],
+  );
+}
+
 class _GradeRow extends StatelessWidget {
   final List<String> labels;
   final List<double> values;
   final VoidCallback onChanged;
-  const _GradeRow({required this.labels, required this.values, required this.onChanged});
+  const _GradeRow({
+    required this.labels,
+    required this.values,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext c) => Row(
@@ -1160,7 +2045,10 @@ class _GradeRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(labels[i], style: const TextStyle(color: mute, fontSize: 10)),
+              Text(
+                labels[i],
+                style: const TextStyle(color: mute, fontSize: 10),
+              ),
               DropdownButton<double>(
                 isExpanded: true,
                 value: values[i],
@@ -1186,9 +2074,222 @@ class _GradeRow extends StatelessWidget {
   );
 }
 
-class CoachAdmissionResult extends StatelessWidget { final Map<String, dynamic> data; const CoachAdmissionResult({super.key, required this.data}); @override Widget build(BuildContext c) { final scores = (data['scores'] as List).cast<Map>(); final risks = (data['risks'] as List).cast<String>(); return Scaffold(backgroundColor: mist, appBar: AppBar(backgroundColor: mist, title: const Text('나의 입시 전략', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))), body: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 28), children: [Text('${data['major']} 지원 전략', style: const TextStyle(color: text, fontSize: 27, fontWeight: FontWeight.w900)), if (data['offline'] == true) const Padding(padding: EdgeInsets.only(top: 5), child: Text('서버 연결 전 임시 진단 결과입니다.', style: TextStyle(color: coral, fontSize: 10))), const SizedBox(height: 16), _StrategyCard('1순위', data['primary_strategy'] as String, data['primary_reason'] as String, lime), const SizedBox(height: 9), _StrategyCard('2순위', data['secondary_strategy'] as String, data['secondary_reason'] as String, lavender), const SizedBox(height: 20), const Text('현재 역량', style: TextStyle(color: text, fontSize: 18, fontWeight: FontWeight.w800)), const SizedBox(height: 9), Wrap(spacing: 8, runSpacing: 8, children: scores.map((s) => SizedBox(width: (MediaQuery.of(c).size.width - 48) / 2, child: _ScoreCard(s['label'] as String, s['value'] as int))).toList()), const SizedBox(height: 20), const Text('COACH+ 체크포인트', style: TextStyle(color: text, fontSize: 18, fontWeight: FontWeight.w800)), const SizedBox(height: 8), ...risks.map((risk) => Padding(padding: const EdgeInsets.only(bottom: 7), child: Text('• $risk', style: const TextStyle(color: mute, fontSize: 12, height: 1.5)))), const SizedBox(height: 16), Container(padding: const EdgeInsets.all(17), decoration: BoxDecoration(color: navy, borderRadius: BorderRadius.circular(20)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('THIS WEEK ACTION PLAN', style: TextStyle(color: Color(0xffAFC5FF), fontSize: 10, fontWeight: FontWeight.w800)), const SizedBox(height: 7), Text(data['action_plan'] as String, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.55))]))])); } }
-class _StrategyCard extends StatelessWidget { final String rank, title, body; final Color color; const _StrategyCard(this.rank, this.title, this.body, this.color); @override Widget build(BuildContext c) => Container(padding: const EdgeInsets.all(17), decoration: BoxDecoration(color: surface, border: Border.all(color: const Color(0xffE6E9EF)), borderRadius: BorderRadius.circular(20)), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: .2), borderRadius: BorderRadius.circular(10)), child: Text(rank, style: TextStyle(color: color == lime ? lime : navy, fontSize: 11, fontWeight: FontWeight.w900))), const SizedBox(width: 11), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: text, fontWeight: FontWeight.w800)), const SizedBox(height: 4), Text(body, style: const TextStyle(color: mute, fontSize: 11, height: 1.45))]))])); }
-class _ScoreCard extends StatelessWidget { final String label; final int value; const _ScoreCard(this.label, this.value); @override Widget build(BuildContext c) => Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(17)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(color: mute, fontSize: 10)), const SizedBox(height: 4), Text('$value점', style: const TextStyle(color: text, fontSize: 23, fontWeight: FontWeight.w900)), const SizedBox(height: 6), LinearProgressIndicator(value: value / 100, color: lime, backgroundColor: lavender, minHeight: 5)])); }
+class CoachAdmissionResult extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const CoachAdmissionResult({super.key, required this.data});
+  @override
+  Widget build(BuildContext c) {
+    final scores = (data['scores'] as List).cast<Map>();
+    final risks = (data['risks'] as List).cast<String>();
+    return Scaffold(
+      backgroundColor: mist,
+      appBar: AppBar(
+        backgroundColor: mist,
+        title: const Text(
+          '나의 입시 전략',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        children: [
+          Text(
+            '${data['major']} 지원 전략',
+            style: const TextStyle(
+              color: text,
+              fontSize: 27,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (data['offline'] == true)
+            const Padding(
+              padding: EdgeInsets.only(top: 5),
+              child: Text(
+                '서버 연결 전 임시 진단 결과입니다.',
+                style: TextStyle(color: coral, fontSize: 10),
+              ),
+            ),
+          const SizedBox(height: 16),
+          _StrategyCard(
+            '1순위',
+            data['primary_strategy'] as String,
+            data['primary_reason'] as String,
+            lime,
+          ),
+          const SizedBox(height: 9),
+          _StrategyCard(
+            '2순위',
+            data['secondary_strategy'] as String,
+            data['secondary_reason'] as String,
+            lavender,
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            '현재 역량',
+            style: TextStyle(
+              color: text,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 9),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: scores
+                .map(
+                  (s) => SizedBox(
+                    width: (MediaQuery.of(c).size.width - 48) / 2,
+                    child: _ScoreCard(s['label'] as String, s['value'] as int),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'COACH+ 체크포인트',
+            style: TextStyle(
+              color: text,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...risks.map(
+            (risk) => Padding(
+              padding: const EdgeInsets.only(bottom: 7),
+              child: Text(
+                '• $risk',
+                style: const TextStyle(color: mute, fontSize: 12, height: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(17),
+            decoration: BoxDecoration(
+              color: navy,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'THIS WEEK ACTION PLAN',
+                  style: TextStyle(
+                    color: Color(0xffAFC5FF),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  data['action_plan'] as String,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    height: 1.55,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StrategyCard extends StatelessWidget {
+  final String rank, title, body;
+  final Color color;
+  const _StrategyCard(this.rank, this.title, this.body, this.color);
+  @override
+  Widget build(BuildContext c) => Container(
+    padding: const EdgeInsets.all(17),
+    decoration: BoxDecoration(
+      color: surface,
+      border: Border.all(color: const Color(0xffE6E9EF)),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            rank,
+            style: TextStyle(
+              color: color == lime ? lime : navy,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: text,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                body,
+                style: const TextStyle(color: mute, fontSize: 11, height: 1.45),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ScoreCard extends StatelessWidget {
+  final String label;
+  final int value;
+  const _ScoreCard(this.label, this.value);
+  @override
+  Widget build(BuildContext c) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: surface,
+      borderRadius: BorderRadius.circular(17),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: mute, fontSize: 10)),
+        const SizedBox(height: 4),
+        Text(
+          '$value점',
+          style: const TextStyle(
+            color: text,
+            fontSize: 23,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        LinearProgressIndicator(
+          value: value / 100,
+          color: lime,
+          backgroundColor: lavender,
+          minHeight: 5,
+        ),
+      ],
+    ),
+  );
+}
 
 class Profile extends StatelessWidget {
   const Profile({super.key});
@@ -1214,7 +2315,7 @@ class Profile extends StatelessWidget {
                 style: TextStyle(
                   color: navy,
                   fontSize: 22,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -1227,7 +2328,7 @@ class Profile extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 19,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
@@ -1263,7 +2364,7 @@ class _ProfileItem extends StatelessWidget {
       leading: Icon(icon, color: lime),
       title: Text(
         title,
-        style: const TextStyle(color: text, fontWeight: FontWeight.w700),
+        style: const TextStyle(color: text, fontWeight: FontWeight.w600),
       ),
       trailing: const Icon(Icons.chevron_right, color: mute),
     ),
@@ -1283,8 +2384,16 @@ class _LegacyLevelTestState extends State<LegacyLevelTest> {
   final answers = [false, false, false];
 
   static const questionsBySubject = {
-    '국어': ['문단의 중심 내용을 파악할 때 가장 먼저 확인할 것은?', '글쓴이의 주장과 근거를 구분하는 활동은?', '다음 중 비유적 표현이 쓰인 문장은?'],
-    '영어': ['I ___ a student. 빈칸에 알맞은 말은?', '다음 중 "책을 읽다"에 해당하는 표현은?', '문장의 주어와 동사를 찾는 활동은 무엇에 도움이 될까요?'],
+    '국어': [
+      '문단의 중심 내용을 파악할 때 가장 먼저 확인할 것은?',
+      '글쓴이의 주장과 근거를 구분하는 활동은?',
+      '다음 중 비유적 표현이 쓰인 문장은?',
+    ],
+    '영어': [
+      'I ___ a student. 빈칸에 알맞은 말은?',
+      '다음 중 "책을 읽다"에 해당하는 표현은?',
+      '문장의 주어와 동사를 찾는 활동은 무엇에 도움이 될까요?',
+    ],
     '수학': ['x + 7 = 15일 때 x는?', '일차함수 y = 2x + 3의 기울기는?', '삼각형 내각의 합은?'],
   };
 
@@ -1317,7 +2426,7 @@ class _LegacyLevelTestState extends State<LegacyLevelTest> {
               style: const TextStyle(
                 color: text,
                 fontSize: 29,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 22),
@@ -1358,7 +2467,7 @@ class _LegacyLevelTestState extends State<LegacyLevelTest> {
               'GACHI LEVEL',
               style: TextStyle(
                 color: lime,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 1,
               ),
             ),
@@ -1368,7 +2477,7 @@ class _LegacyLevelTestState extends State<LegacyLevelTest> {
               style: TextStyle(
                 color: text,
                 fontSize: 34,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 height: 1.08,
               ),
             ),
@@ -1378,7 +2487,10 @@ class _LegacyLevelTestState extends State<LegacyLevelTest> {
               style: TextStyle(color: mute, height: 1.55),
             ),
             const SizedBox(height: 32),
-            const Text('학년', style: TextStyle(color: text, fontWeight: FontWeight.w800)),
+            const Text(
+              '학년',
+              style: TextStyle(color: text, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               initialValue: grade,
@@ -1389,12 +2501,18 @@ class _LegacyLevelTestState extends State<LegacyLevelTest> {
                 border: OutlineInputBorder(borderSide: BorderSide.none),
               ),
               items: const ['중1', '중2', '중3', '고1', '고2', '고3']
-                  .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                  .map(
+                    (value) =>
+                        DropdownMenuItem(value: value, child: Text(value)),
+                  )
                   .toList(),
               onChanged: (value) => setState(() => grade = value!),
             ),
             const SizedBox(height: 24),
-            const Text('진단 과목', style: TextStyle(color: text, fontWeight: FontWeight.w800)),
+            const Text(
+              '진단 과목',
+              style: TextStyle(color: text, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -1407,7 +2525,7 @@ class _LegacyLevelTestState extends State<LegacyLevelTest> {
                       selectedColor: lime,
                       labelStyle: TextStyle(
                         color: subject == value ? Colors.white : text,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                       onSelected: (_) => setState(() => subject = value),
                     ),
@@ -1424,67 +2542,11 @@ class _LegacyLevelTestState extends State<LegacyLevelTest> {
               ),
               child: Text(
                 '$grade $subject 무료 진단 시작',
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
         ),
-      ),
-    ),
-  );
-}
-
-class _Intro extends StatelessWidget {
-  final String tag, title;
-  final Color color;
-  final VoidCallback tap;
-  const _Intro(this.tag, this.title, this.color, this.tap);
-  @override
-  Widget build(BuildContext c) => Scaffold(
-    backgroundColor: mist,
-    body: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Spacer(),
-          Text(
-            tag,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 13),
-          Text(
-            title,
-            style: const TextStyle(
-              color: text,
-              fontSize: 35,
-              fontWeight: FontWeight.w900,
-              height: 1.05,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            '국어 · 영어 · 수학 중 선택해\n짧고 정확한 진단을 시작하세요.',
-            style: TextStyle(color: mute, height: 1.6),
-          ),
-          const Spacer(),
-          FilledButton(
-            onPressed: tap,
-            style: FilledButton.styleFrom(
-              backgroundColor: color,
-              foregroundColor: navy,
-              minimumSize: const Size.fromHeight(56),
-            ),
-            child: const Text(
-              '무료 진단 시작',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-          ),
-        ],
       ),
     ),
   );
@@ -1508,7 +2570,7 @@ class _Result extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               letterSpacing: 1,
             ),
           ),
@@ -1518,7 +2580,7 @@ class _Result extends StatelessWidget {
             style: const TextStyle(
               color: text,
               fontSize: 36,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 10),
@@ -1539,7 +2601,7 @@ class _Result extends StatelessWidget {
             ),
             child: const Text(
               '내 진학 전략 확인하기',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -1551,21 +2613,7 @@ class _Result extends StatelessWidget {
 class AdmissionForm extends StatelessWidget {
   const AdmissionForm({super.key});
   @override
-  Widget build(BuildContext c) => _Intro(
-    'GACHI ADMISSION',
-    '나만의 대입\n전략을 설계해요.',
-    lavender,
-    () => Navigator.push(
-      c,
-      MaterialPageRoute(
-        builder: (_) => const _Result(
-          'GACHI SCORE 78',
-          '학생부종합전형이 현재 가장 강한 전략입니다.\n수학 목표 LEVEL을 한 단계 높여보세요.',
-          lavender,
-        ),
-      ),
-    ),
-  );
+  Widget build(BuildContext c) => const CoachAdmissionIntake();
 }
 
 class HighReport extends StatelessWidget {
@@ -1593,7 +2641,7 @@ class Paywall extends StatelessWidget {
             'COACH+',
             style: TextStyle(
               color: lime,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               letterSpacing: 1,
             ),
           ),
@@ -1604,7 +2652,7 @@ class Paywall extends StatelessWidget {
               color: text,
               fontSize: 35,
               height: 1.05,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 22),
@@ -1627,7 +2675,7 @@ class Paywall extends StatelessWidget {
             ),
             child: const Text(
               '상담 신청하기',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -1651,7 +2699,7 @@ class _PayRow extends StatelessWidget {
           children: [
             Text(
               a,
-              style: const TextStyle(color: text, fontWeight: FontWeight.w800),
+              style: const TextStyle(color: text, fontWeight: FontWeight.w600),
             ),
             Text(b, style: const TextStyle(color: mute, fontSize: 11)),
           ],

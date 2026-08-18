@@ -107,7 +107,7 @@ class _HomeState extends State<Home> {
           style: const TextStyle(
             color: text,
             fontSize: 21,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 7),
@@ -161,7 +161,7 @@ class _HomeState extends State<Home> {
                 style: TextStyle(
                   color: text,
                   fontSize: 19,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -206,7 +206,7 @@ class _HomeState extends State<Home> {
                 style: TextStyle(
                   color: text,
                   fontSize: 19,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -271,7 +271,7 @@ class _GoalSnapshot extends StatelessWidget {
                 '${goal.subject} · ${goal.target}',
                 style: const TextStyle(
                   color: text,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 4),
@@ -314,7 +314,7 @@ class _EmptyCoachPlan extends StatelessWidget {
           style: TextStyle(
             color: text,
             fontSize: 16,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 5),
@@ -358,7 +358,7 @@ class _CoachProgress extends StatelessWidget {
                   style: TextStyle(
                     color: Color(0xffAFC5FF),
                     fontSize: 9,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 1,
                   ),
                 ),
@@ -367,7 +367,7 @@ class _CoachProgress extends StatelessWidget {
                   '$completed개 완료 · ${total - completed}개 남음',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 9),
@@ -389,7 +389,7 @@ class _CoachProgress extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -434,14 +434,14 @@ class _CoachTaskCard extends StatelessWidget {
         ),
         child: Text(
           task.day,
-          style: const TextStyle(color: lime, fontWeight: FontWeight.w900),
+          style: const TextStyle(color: lime, fontWeight: FontWeight.w600),
         ),
       ),
       title: Text(
         task.title,
         style: TextStyle(
           color: completed ? mute : text,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           decoration: completed ? TextDecoration.lineThrough : null,
         ),
       ),
@@ -533,7 +533,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
         foregroundColor: text,
         title: const Text(
           '자기주도 목표 만들기',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       body: ListView(
@@ -545,7 +545,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
               color: text,
               fontSize: 27,
               height: 1.15,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
@@ -566,7 +566,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
                     selectedColor: lime,
                     labelStyle: TextStyle(
                       color: area == value ? Colors.white : text,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                     onSelected: (_) => setState(() => area = value),
                   ),
@@ -628,7 +628,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
                 '주당 학습 시간',
                 style: const TextStyle(
                   color: text,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const Spacer(),
@@ -636,7 +636,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
                 '${weeklyHours.round()}시간',
                 style: const TextStyle(
                   color: lime,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -655,7 +655,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
                 '주당 실행 횟수',
                 style: const TextStyle(
                   color: text,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const Spacer(),
@@ -663,7 +663,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
                 '${sessionsPerWeek.round()}회',
                 style: const TextStyle(
                   color: lime,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -705,7 +705,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
                   style: TextStyle(
                     color: Color(0xffAFC5FF),
                     fontSize: 9,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 1,
                   ),
                 ),
@@ -724,7 +724,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
                                 task.day,
                                 style: const TextStyle(
                                   color: lime,
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -755,7 +755,7 @@ class _GoalPlanFormState extends State<GoalPlanForm> {
             ),
             child: const Text(
               '목표 저장하고 주간 플랜 만들기',
-              style: TextStyle(fontWeight: FontWeight.w900),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -805,7 +805,7 @@ class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
         foregroundColor: text,
         title: const Text(
           '이번 주 자기주도 플랜',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       body: ListView(
@@ -817,7 +817,7 @@ class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
               color: text,
               fontSize: 27,
               height: 1.15,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 14),
@@ -860,7 +860,7 @@ class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
               children: [
                 const Text(
                   '오늘의 자기주도 회고',
-                  style: TextStyle(color: text, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: text, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
                 const Text(
@@ -916,7 +916,7 @@ class _InsightsHubState extends State<InsightsHub> {
         foregroundColor: text,
         title: const Text(
           '2026 진로·입시 인사이트',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       body: ListView(
@@ -928,7 +928,7 @@ class _InsightsHubState extends State<InsightsHub> {
               color: text,
               fontSize: 27,
               height: 1.15,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
@@ -948,7 +948,7 @@ class _InsightsHubState extends State<InsightsHub> {
                     selectedColor: lime,
                     labelStyle: TextStyle(
                       color: grade == value ? Colors.white : text,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                     onSelected: (_) => setState(() => grade = value),
                   ),
@@ -998,7 +998,7 @@ class _InsightCard extends StatelessWidget {
                   item.grade,
                   style: const TextStyle(
                     fontSize: 9,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 backgroundColor: lavender,
@@ -1010,7 +1010,7 @@ class _InsightCard extends StatelessWidget {
                   item.admissionYear,
                   style: const TextStyle(
                     fontSize: 9,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 backgroundColor: const Color(0xffFFF0EA),
@@ -1025,7 +1025,7 @@ class _InsightCard extends StatelessWidget {
             style: const TextStyle(
               color: coral,
               fontSize: 9,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               letterSpacing: 1,
             ),
           ),
@@ -1036,7 +1036,7 @@ class _InsightCard extends StatelessWidget {
               color: text,
               fontSize: 16,
               height: 1.3,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 7),
@@ -1066,7 +1066,7 @@ class _InsightCard extends StatelessWidget {
                         color: text,
                         fontSize: 11,
                         height: 1.45,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
