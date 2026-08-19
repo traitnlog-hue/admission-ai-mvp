@@ -183,10 +183,120 @@ class _MapGridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class PremiumAdmissionOffer extends StatelessWidget {
+class PremiumAdmissionOffer extends StatefulWidget {
   final Map<String, dynamic>? freeResult;
 
   const PremiumAdmissionOffer({super.key, this.freeResult});
+
+  @override
+  State<PremiumAdmissionOffer> createState() => _PremiumAdmissionOfferState();
+}
+
+class _PremiumAdmissionOfferState extends State<PremiumAdmissionOffer> {
+  final selectedPrograms = <String>{'입시전략 분석 리포트'};
+  String selectedGrade = '전체';
+
+  static const programs = <_ConsultingProgram>[
+    _ConsultingProgram(
+      title: '고교선택·고입 전략 컨설팅',
+      recommendedFor: '중1~중3 1학기',
+      grades: ['중1', '중2', '중3'],
+      sessionInfo: 'MVP 기본 구성 · 회당 60분 · 총 1회',
+      price: 39000,
+      summary: '특목·자사고를 포함한 고교 선택과 지원 전략을 세워요.',
+      detail: '학생의 성향과 목표를 바탕으로 고교 선택 기준과 지원 전략을 정리합니다.',
+      deliverables: ['고교 선택 기준', '지원 전략 요약', '준비 체크리스트'],
+      siteUrl: 'https://consulting-kisae.com/high',
+    ),
+    _ConsultingProgram(
+      title: '특목·자사 1% 자소서·면접 컨설팅',
+      recommendedFor: '중3 여름방학 이후',
+      grades: ['중3'],
+      sessionInfo: 'MVP 기본 구성 · 회당 60분 · 총 4회',
+      price: 79000,
+      summary: '자소서 소재 설계부터 예상 질문·답변 연습까지 1:1로 준비해요.',
+      detail: '문항별 소재를 설계·완성하고, 지원 학교 기준 예상 질문과 답변을 연습합니다.',
+      deliverables: ['문항별 소재 설계', '자소서 피드백', '면접 예상 질문'],
+    ),
+    _ConsultingProgram(
+      title: '1% 관리형 컨설팅',
+      recommendedFor: '고1~고3 학기 중',
+      grades: ['고1', '고2', '고3'],
+      sessionInfo: 'MVP 기본 구성 · 회당 60분 · 총 8회',
+      price: 99000,
+      summary: '학교생활·생기부를 초기부터 관리하고 상시 피드백을 제공해요.',
+      detail: '한 학기 커리큘럼과 채팅방 기반 상시 관리로 활동의 일관성과 생기부 완성도를 높입니다.',
+      deliverables: ['학기 커리큘럼', '채팅방 기반 점검', '생기부 활동 관리'],
+      siteUrl: 'https://consulting-kisae.com/1percent',
+    ),
+    _ConsultingProgram(
+      title: '입시전략 분석 리포트',
+      recommendedFor: '고2 방학',
+      grades: ['고2'],
+      sessionInfo: 'MVP 기본 구성 · 회당 90분 · 총 1회',
+      price: 49000,
+      summary: '내신·모의고사·세특을 분석해 목표 대학과 실행 로드맵을 설정해요.',
+      detail: '성적과 학생부 기록을 함께 분석해 목표 대학의 방향과 실행 우선순위를 제안합니다.',
+      deliverables: ['입시전략 분석', '목표 대학 방향', '실행 로드맵'],
+      siteUrl: 'https://consulting-kisae.com/pass',
+    ),
+    _ConsultingProgram(
+      title: '생기부 전략 컨설팅',
+      recommendedFor: '고2 후반~고3 초',
+      grades: ['고2', '고3'],
+      sessionInfo: 'MVP 기본 구성 · 회당 90분 · 총 2회',
+      price: 69000,
+      summary: '목표 대학에 맞춘 생기부 스토리라인과 세특·활동 전략을 설계해요.',
+      detail: '목표 대학의 평가 관점에 맞춰 학생부의 스토리라인과 다음 활동 방향을 구체화합니다.',
+      deliverables: ['생기부 스토리라인', '세특 전략', '활동 우선순위'],
+      siteUrl: 'https://consulting-kisae.com/roadmap',
+    ),
+    _ConsultingProgram(
+      title: '수시 컨설팅',
+      recommendedFor: '고3 1~7월',
+      grades: ['고3'],
+      sessionInfo: 'MVP 기본 구성 · 회당 90분 · 총 2회',
+      price: 79000,
+      summary: '학생부 보완과 지원 방향 확정, 수시 원서 전략을 준비해요.',
+      detail: '수시 전형별 지원 방향을 정리하고, 원서 전 준비해야 할 자료와 판단 기준을 점검합니다.',
+      deliverables: ['수시 지원 전략', '원서 준비 체크리스트', '지원 우선순위'],
+      siteUrl: 'https://consulting-kisae.com/blog',
+    ),
+    _ConsultingProgram(
+      title: '결과 후 보완 컨설팅',
+      recommendedFor: '고3 8~12월',
+      grades: ['고3'],
+      sessionInfo: 'MVP 기본 구성 · 회당 60분 · 총 2회',
+      price: 39000,
+      summary: '수시 결과 이후에도 학생부·지원 관련 보완을 이어가요.',
+      detail:
+          '관리형 상담을 바탕으로 결과 이후의 보완 과제를 정리합니다. 자기소개서 컨설팅은 과거형 안내로 별도 검토가 필요합니다.',
+      deliverables: ['결과 후 보완 과제', '지원 상태 점검', '다음 단계 안내'],
+    ),
+    _ConsultingProgram(
+      title: '정시 컨설팅',
+      recommendedFor: '고3 12월~1월',
+      grades: ['고3'],
+      sessionInfo: 'MVP 기본 구성 · 회당 90분 · 총 1회',
+      price: 79000,
+      summary: '정시 지원 전략을 세우고 최종 대학·학과 선택을 돕습니다.',
+      detail: '수능 성적과 모집 요강을 바탕으로 지원 가능한 대학·학과의 조합과 우선순위를 정리합니다.',
+      deliverables: ['정시 지원 전략', '대학·학과 조합', '최종 지원 우선순위'],
+    ),
+  ];
+
+  List<_ConsultingProgram> get chosen => programs
+      .where((program) => selectedPrograms.contains(program.title))
+      .toList();
+  List<_ConsultingProgram> get visiblePrograms => selectedGrade == '전체'
+      ? programs
+      : programs
+            .where((program) => program.grades.contains(selectedGrade))
+            .toList();
+  int get totalPrice =>
+      chosen.fold(0, (total, program) => total + program.price);
+  String _formatWon(int value) =>
+      '${value.toString().replaceAllMapped(RegExp(r'(?<!^)(?=(\d{3})+$)'), (_) => ',')}원';
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -214,9 +324,9 @@ class PremiumAdmissionOffer extends StatelessWidget {
               ),
               const SizedBox(height: 9),
               Text(
-                freeResult == null
+                widget.freeResult == null
                     ? '지원 전략을 더 깊고\n구체적으로 설계해요.'
-                    : '${freeResult!['major']} 무료 진단을\n정밀 전략으로 확장해요.',
+                    : '${widget.freeResult!['major']} 무료 진단을\n정밀 전략으로 확장해요.',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 25,
@@ -226,7 +336,7 @@ class PremiumAdmissionOffer extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               const Text(
-                '대학·전형별 비교, 학생부 보완 포인트, 4주 실행 로드맵을 한 번에 확인합니다.',
+                '필요한 프로그램만 선택해 나만의 입시 컨설팅 구성을 만들어요.',
                 style: TextStyle(
                   color: Color(0xffCAD4E6),
                   fontSize: 11,
@@ -237,19 +347,69 @@ class PremiumAdmissionOffer extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        const _PlanComparisonRow(title: '핵심 전략 진단', free: '제공', premium: '제공'),
-        const _PlanComparisonRow(
-          title: '대학·전형별 GAP',
-          free: '요약',
-          premium: '상세 비교',
+        const Text(
+          '원하는 프로그램 선택',
+          style: TextStyle(
+            color: text,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        const _PlanComparisonRow(
-          title: '학생부·세특 분석',
-          free: '기본',
-          premium: '항목별',
+        const SizedBox(height: 5),
+        const Text(
+          '프로그램별 상세 내용은 보기 버튼에서 확인할 수 있어요.',
+          style: TextStyle(color: mute, fontSize: 10),
         ),
-        const _PlanComparisonRow(title: '4주 실행 로드맵', free: '—', premium: '제공'),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+        const Text(
+          '학년별로 보기',
+          style: TextStyle(
+            color: text,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: ['전체', '중1', '중2', '중3', '고1', '고2', '고3']
+              .map(
+                (grade) => ChoiceChip(
+                  label: Text(grade),
+                  selected: selectedGrade == grade,
+                  selectedColor: lavender,
+                  checkmarkColor: lime,
+                  onSelected: (_) => setState(() => selectedGrade = grade),
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 10),
+        if (visiblePrograms.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text(
+              '선택한 학년의 프로그램을 준비 중이에요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: mute, fontSize: 11),
+            ),
+          )
+        else
+          ...visiblePrograms.map(
+            (program) => _ConsultingProgramCard(
+              program: program,
+              selected: selectedPrograms.contains(program.title),
+              onChanged: (selected) => setState(() {
+                if (selected) {
+                  selectedPrograms.add(program.title);
+                } else {
+                  selectedPrograms.remove(program.title);
+                }
+              }),
+            ),
+          ),
+        const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -257,20 +417,20 @@ class PremiumAdmissionOffer extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: const Color(0xffDCE4F1)),
           ),
-          child: const Row(
+          child: Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '정밀 분석 1회',
-                      style: TextStyle(color: mute, fontSize: 11),
+                      '${chosen.length}개 프로그램 선택',
+                      style: const TextStyle(color: mute, fontSize: 11),
                     ),
                     SizedBox(height: 4),
                     Text(
-                      '49,000원',
-                      style: TextStyle(
+                      _formatWon(totalPrice),
+                      style: const TextStyle(
                         color: text,
                         fontSize: 23,
                         fontWeight: FontWeight.w600,
@@ -279,29 +439,36 @@ class PremiumAdmissionOffer extends StatelessWidget {
                   ],
                 ),
               ),
-              Text('VAT 포함', style: TextStyle(color: mute, fontSize: 10)),
+              const Text(
+                'MVP 검토 가격 · VAT 포함',
+                style: TextStyle(color: mute, fontSize: 10),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 14),
         FilledButton.icon(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PaymentPage(
-                productName: 'GACHI 정밀 입시 분석',
-                price: 49000,
-                freeResult: freeResult,
-              ),
-            ),
-          ),
+          onPressed: chosen.isEmpty
+              ? null
+              : () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PaymentPage(
+                      productName: chosen
+                          .map((program) => program.title)
+                          .join(' + '),
+                      price: totalPrice,
+                      freeResult: widget.freeResult,
+                    ),
+                  ),
+                ),
           style: FilledButton.styleFrom(
             backgroundColor: lime,
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(56),
           ),
           icon: const Icon(Icons.lock_outline_rounded),
-          label: const Text('결제하고 정밀 분석 시작'),
+          label: Text(chosen.isEmpty ? '프로그램을 선택해 주세요' : '결제하고 정밀 분석 시작'),
         ),
         const SizedBox(height: 9),
         const Text(
@@ -314,7 +481,221 @@ class PremiumAdmissionOffer extends StatelessWidget {
   );
 }
 
+class _ConsultingProgram {
+  final String title;
+  final String recommendedFor;
+  final List<String> grades;
+  final String sessionInfo;
+  final int price;
+  final String summary;
+  final String detail;
+  final List<String> deliverables;
+  final String? siteUrl;
+
+  const _ConsultingProgram({
+    required this.title,
+    required this.recommendedFor,
+    required this.grades,
+    required this.sessionInfo,
+    required this.price,
+    required this.summary,
+    required this.detail,
+    required this.deliverables,
+    this.siteUrl,
+  });
+}
+
+class _ConsultingProgramCard extends StatelessWidget {
+  final _ConsultingProgram program;
+  final bool selected;
+  final ValueChanged<bool> onChanged;
+
+  const _ConsultingProgramCard({
+    required this.program,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  String get priceLabel =>
+      '${program.price.toString().replaceAllMapped(RegExp(r'(?<!^)(?=(\d{3})+$)'), (_) => ',')}원';
+
+  Future<void> _showDetail(BuildContext context) => showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 8, 22, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              program.title,
+              style: const TextStyle(
+                color: text,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: lavender,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '권장 시기 · ${program.recommendedFor}',
+                style: const TextStyle(
+                  color: lime,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              program.sessionInfo,
+              style: const TextStyle(
+                color: mute,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              program.detail,
+              style: const TextStyle(color: mute, fontSize: 12, height: 1.55),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '제공 내용',
+              style: TextStyle(color: text, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            ...program.deliverables.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: lime,
+                      size: 17,
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      item,
+                      style: const TextStyle(color: text, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'MVP 검토 가격 · $priceLabel',
+              style: const TextStyle(color: mute, fontSize: 10),
+            ),
+            if (program.siteUrl != null) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse(program.siteUrl!),
+                  mode: LaunchMode.externalApplication,
+                ),
+                icon: const Icon(Icons.open_in_new_rounded, size: 17),
+                label: const Text('사이트 프로그램 보기'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 9),
+    child: Material(
+      color: surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: selected ? const Color(0xff9FC1FF) : const Color(0xffE2E6EE),
+        ),
+      ),
+      child: Column(
+        children: [
+          CheckboxListTile(
+            value: selected,
+            onChanged: (value) => onChanged(value ?? false),
+            activeColor: lime,
+            contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+            visualDensity: VisualDensity.standard,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              program.title,
+              style: const TextStyle(
+                color: text,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 3),
+                Text(
+                  program.recommendedFor,
+                  style: const TextStyle(
+                    color: lime,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  program.sessionInfo,
+                  style: const TextStyle(color: mute, fontSize: 10),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  program.summary,
+                  style: const TextStyle(
+                    color: mute,
+                    fontSize: 10,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+            secondary: Text(
+              priceLabel,
+              style: const TextStyle(
+                color: lime,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => _showDetail(context),
+              icon: const Icon(Icons.description_outlined, size: 16),
+              label: const Text('상세 내용 보기'),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _PlanComparisonRow extends StatelessWidget {
+  // Deprecated comparison component kept for compatibility with prior screens.
   final String title;
   final String free;
   final String premium;

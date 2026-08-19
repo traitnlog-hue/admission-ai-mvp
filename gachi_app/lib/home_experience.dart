@@ -1,5 +1,18 @@
 part of 'main.dart';
 
+bool _hasPlanDayPassed(String day, {DateTime? now}) {
+  const weekdayByLabel = {'월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6};
+  final dueWeekday = weekdayByLabel[day];
+  if (dueWeekday == null) return false;
+  return dueWeekday < (now ?? DateTime.now()).weekday;
+}
+
+String _currentPlanWeekKey({DateTime? now}) {
+  final date = now ?? DateTime.now();
+  final monday = date.subtract(Duration(days: date.weekday - DateTime.monday));
+  return '${monday.year}-${monday.month}-${monday.day}';
+}
+
 class Home extends StatefulWidget {
   final SessionUser? user;
   final VoidCallback? onRequireLogin;
@@ -23,13 +36,22 @@ class _HomeState extends State<Home> {
   static const _completedKey = 'gachi.study.completed';
   static const _profileKey = 'gachi.student.profile';
   static const _notificationsReadKey = 'gachi.notifications.read';
+  static const _coachReminderEnabledKey = 'gachi.study.reminder.enabled';
+  static const _coachReminderWeekKey = 'gachi.study.reminder.last_week';
   AcademyStudentProfile? academyProfile;
   final List<StudyGoal> goals = [];
   final Set<String> completedTaskIds = {};
   String insightGrade = '고3';
   bool hasUnreadNotifications = true;
+  bool coachPlanRemindersEnabled = true;
 
   List<StudyTask> get weeklyTasks => goals.expand(buildWeeklyTasks).toList();
+  List<StudyTask> get overdueTasks => weeklyTasks
+      .where(
+        (task) =>
+            _hasPlanDayPassed(task.day) && !completedTaskIds.contains(task.id),
+      )
+      .toList();
 
   @override
   void initState() {
@@ -44,6 +66,8 @@ class _HomeState extends State<Home> {
     final savedCompleted = preferences.getStringList(_completedKey) ?? [];
     final notificationsRead =
         preferences.getBool(_notificationsReadKey) ?? false;
+    final remindersEnabled =
+        preferences.getBool(_coachReminderEnabledKey) ?? true;
     if (!mounted) return;
     setState(() {
       if (encodedGoals != null) {
@@ -60,13 +84,35 @@ class _HomeState extends State<Home> {
       completedTaskIds
         ..clear()
         ..addAll(savedCompleted);
-      hasUnreadNotifications = !notificationsRead;
+      coachPlanRemindersEnabled = remindersEnabled;
+      hasUnreadNotifications =
+          !notificationsRead || (remindersEnabled && overdueTasks.isNotEmpty);
       if (encodedProfile != null) {
         academyProfile = AcademyStudentProfile.fromJson(
           Map<String, dynamic>.from(jsonDecode(encodedProfile) as Map),
         );
         insightGrade = academyProfile!.grade;
       }
+    });
+    await _showOverduePlanReminderIfNeeded(preferences);
+  }
+
+  Future<void> _showOverduePlanReminderIfNeeded(
+    SharedPreferences preferences,
+  ) async {
+    if (!coachPlanRemindersEnabled || overdueTasks.isEmpty) return;
+    final weekKey = _currentPlanWeekKey();
+    if (preferences.getString(_coachReminderWeekKey) == weekKey) return;
+    await preferences.setString(_coachReminderWeekKey, weekKey);
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('지난 요일의 미완료 플랜 ${overdueTasks.length}개가 있어요.'),
+          action: SnackBarAction(label: '플랜 보기', onPressed: _openWeeklyPlan),
+        ),
+      );
     });
   }
 
@@ -116,7 +162,10 @@ class _HomeState extends State<Home> {
   Future<void> _openNotifications() async {
     await Navigator.push<void>(
       context,
-      MaterialPageRoute(builder: (_) => const NotificationCenterPage()),
+      MaterialPageRoute(
+        builder: (_) =>
+            NotificationCenterPage(overdueCount: overdueTasks.length),
+      ),
     );
     final preferences = await SharedPreferences.getInstance();
     await preferences.setBool(_notificationsReadKey, true);
@@ -128,6 +177,35 @@ class _HomeState extends State<Home> {
       () => completed ? completedTaskIds.add(id) : completedTaskIds.remove(id),
     );
     _savePlan();
+  }
+
+  Future<void> _setCoachPlanReminders(bool enabled) async {
+    setState(() => coachPlanRemindersEnabled = enabled);
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_coachReminderEnabledKey, enabled);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          enabled ? '지난 요일의 미완료 플랜을 앱에서 알려드릴게요.' : '미완료 플랜 알림을 끌게요.',
+        ),
+      ),
+    );
+  }
+
+  void _openWeeklyPlan() {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WeeklyCoachPlan(
+          goals: goals,
+          completedTaskIds: completedTaskIds,
+          onToggle: _toggleTask,
+          remindersEnabled: coachPlanRemindersEnabled,
+          onReminderChanged: _setCoachPlanReminders,
+        ),
+      ),
+    );
   }
 
   @override
@@ -171,7 +249,10 @@ class _HomeState extends State<Home> {
           onEditProfile: _editProfile,
           onOpenMap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ValueAcademyMapPage()),
+            MaterialPageRoute(
+              builder: (_) =>
+                  ValueAcademyMapPage(studentRegion: academyProfile?.region),
+            ),
           ),
           onQuickCheck: () => showQuickEscapeDiagnosis(context),
         ),
@@ -245,16 +326,7 @@ class _HomeState extends State<Home> {
             ),
             if (tasks.isNotEmpty)
               TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => WeeklyCoachPlan(
-                      goals: goals,
-                      completedTaskIds: completedTaskIds,
-                      onToggle: _toggleTask,
-                    ),
-                  ),
-                ),
+                onPressed: _openWeeklyPlan,
                 child: const Text('전체 보기'),
               ),
           ],
@@ -263,6 +335,13 @@ class _HomeState extends State<Home> {
         if (tasks.isEmpty)
           _EmptyCoachPlan(onAdd: _addGoal)
         else ...[
+          if (coachPlanRemindersEnabled && overdueTasks.isNotEmpty) ...[
+            _OverduePlanReminder(
+              count: overdueTasks.length,
+              onTap: _openWeeklyPlan,
+            ),
+            const SizedBox(height: 10),
+          ],
           _CoachProgress(completed: completed, total: tasks.length),
           const SizedBox(height: 10),
           ...tasks
@@ -389,7 +468,8 @@ String _profileInitial(SessionUser? user) {
 }
 
 class NotificationCenterPage extends StatelessWidget {
-  const NotificationCenterPage({super.key});
+  final int overdueCount;
+  const NotificationCenterPage({super.key, this.overdueCount = 0});
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -408,21 +488,29 @@ class NotificationCenterPage extends StatelessWidget {
     ),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      children: const [
-        _NotificationCard(
+      children: [
+        if (overdueCount > 0)
+          _NotificationCard(
+            icon: Icons.notifications_active_outlined,
+            title: '미완료 코치 플랜이 있어요',
+            body: '지난 요일의 플랜 $overdueCount개를 확인하고 다시 계획해 보세요.',
+            time: '오늘',
+            highlighted: true,
+          ),
+        const _NotificationCard(
           icon: Icons.auto_awesome_rounded,
           title: '이번 주 코치 플랜을 확인해 보세요',
           body: '목표를 추가하면 요일별 학습·오답·회고 과제가 자동으로 구성됩니다.',
           time: '오늘',
           highlighted: true,
         ),
-        _NotificationCard(
+        const _NotificationCard(
           icon: Icons.receipt_long_rounded,
           title: '영수증 1건으로 진단 티켓 1매',
           body: '실명 회원이 영수증과 후기를 인증하면 대입전략 또는 고교탐색에 사용할 수 있어요.',
           time: '오늘',
         ),
-        _NotificationCard(
+        const _NotificationCard(
           icon: Icons.school_outlined,
           title: '2026 입시 인사이트가 업데이트됐어요',
           body: '현재 학년을 기준으로 교육청·대학 공식 자료의 확인 포인트를 정리했습니다.',
@@ -599,6 +687,69 @@ class _EmptyCoachPlan extends StatelessWidget {
   );
 }
 
+class _OverduePlanReminder extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+
+  const _OverduePlanReminder({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Ink(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xffEEF4FF),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xffC8DBFF)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: lime,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.notifications_active_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '미완료 플랜 $count개를 확인해 보세요',
+                    style: const TextStyle(
+                      color: text,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  const Text(
+                    '지난 요일의 플랜을 다시 계획할 수 있어요.',
+                    style: TextStyle(color: mute, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: lime),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _CoachProgress extends StatelessWidget {
   final int completed;
   final int total;
@@ -610,8 +761,16 @@ class _CoachProgress extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: navy,
-        borderRadius: BorderRadius.circular(18),
+        color: surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xffD9E4F6)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D294A80),
+            blurRadius: 15,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -620,11 +779,11 @@ class _CoachProgress extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'SELF-DIRECTED WEEK',
+                  'MY LEARNING PULSE',
                   style: TextStyle(
-                    color: Color(0xffAFC5FF),
+                    color: lime,
                     fontSize: 9,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1,
                   ),
                 ),
@@ -632,7 +791,7 @@ class _CoachProgress extends StatelessWidget {
                 Text(
                   '$completed개 완료 · ${total - completed}개 남음',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: text,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -642,20 +801,44 @@ class _CoachProgress extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: progress,
                     color: lime,
-                    backgroundColor: Colors.white12,
-                    minHeight: 5,
+                    backgroundColor: const Color(0xffE6EEFC),
+                    minHeight: 6,
                   ),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  '이번 주의 맥박',
+                  style: TextStyle(color: mute, fontSize: 9),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 15),
-          Text(
-            '${(progress * 100).round()}%',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
+          SizedBox(
+            width: 58,
+            height: 58,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 58,
+                  height: 58,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 6,
+                    color: lime,
+                    backgroundColor: const Color(0xffE6EEFC),
+                  ),
+                ),
+                Text(
+                  '${(progress * 100).round()}%',
+                  style: const TextStyle(
+                    color: lime,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1034,11 +1217,15 @@ class WeeklyCoachPlan extends StatefulWidget {
   final List<StudyGoal> goals;
   final Set<String> completedTaskIds;
   final void Function(String id, bool completed) onToggle;
+  final bool remindersEnabled;
+  final ValueChanged<bool> onReminderChanged;
   const WeeklyCoachPlan({
     super.key,
     required this.goals,
     required this.completedTaskIds,
     required this.onToggle,
+    required this.remindersEnabled,
+    required this.onReminderChanged,
   });
 
   @override
@@ -1046,8 +1233,33 @@ class WeeklyCoachPlan extends StatefulWidget {
 }
 
 class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
+  static const _reflectionKey = 'gachi.weekly_coach_plan.reflection';
   late final Set<String> completed = {...widget.completedTaskIds};
   final reflection = TextEditingController();
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreReflection();
+  }
+
+  Future<void> _restoreReflection() async {
+    final preferences = await SharedPreferences.getInstance();
+    final savedReflection = preferences.getString(_reflectionKey);
+    if (!mounted || savedReflection == null) return;
+    setState(() => reflection.text = savedReflection);
+  }
+
+  Future<void> _saveReflection() async {
+    setState(() => saving = true);
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_reflectionKey, reflection.text.trim());
+    if (!mounted) return;
+    setState(() => saving = false);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('이번 주 회고를 저장했어요.')));
+  }
 
   @override
   void dispose() {
@@ -1078,36 +1290,113 @@ class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
         children: [
           const Text(
-            '계획하고, 실행하고,\n스스로 점검해요.',
+            '이번 주 학습 플래너',
             style: TextStyle(
               color: text,
-              fontSize: 27,
+              fontSize: 26,
               height: 1.15,
               fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 5),
+          const Text(
+            '오늘 할 일부터 끝내고, 매일의 학습 흐름을 기록해요.',
+            style: TextStyle(color: mute, fontSize: 11),
+          ),
           const SizedBox(height: 14),
           _CoachProgress(completed: done, total: tasks.length),
+          const SizedBox(height: 13),
+          _PlannerWeekStrip(tasks: tasks, completed: completed),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: widget.goals
-                .map(
-                  (goal) => Chip(
-                    label: Text(
-                      '${goal.subject} · ${goal.target}',
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                    backgroundColor: lavender,
-                    side: BorderSide.none,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: const Color(0xffE2E6EE)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: lavender,
+                    borderRadius: BorderRadius.circular(11),
                   ),
-                )
-                .toList(),
+                  child: const Icon(
+                    Icons.notifications_active_outlined,
+                    color: lime,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '미완료 플랜 알림',
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '지난 요일의 미완료 플랜을 앱에서 알려드려요.',
+                        style: TextStyle(color: mute, fontSize: 9),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  value: widget.remindersEnabled,
+                  activeTrackColor: lime,
+                  onChanged: widget.onReminderChanged,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: const Color(0xffEEF4FF),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '이번 주 목표',
+                  style: TextStyle(
+                    color: lime,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.goals.isEmpty
+                      ? '목표를 추가해 나만의 학습 루틴을 만들어 보세요.'
+                      : widget.goals
+                            .map((goal) => '${goal.subject} · ${goal.target}')
+                            .join('\n'),
+                  style: const TextStyle(
+                    color: text,
+                    fontSize: 13,
+                    height: 1.45,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
           ...tasks.map(
-            (task) => _CoachTaskCard(
+            (task) => _PlannerTaskRow(
               task: task,
               completed: completed.contains(task.id),
               onChanged: (value) => _toggle(task.id, value),
@@ -1141,6 +1430,15 @@ class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
                     hint: '예: 문제를 끝까지 읽은 점은 좋았고, 오답 정리가 늦었다. 내일은 시작 10분 안에 복습부터 한다.',
                   ),
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: saving ? null : _saveReflection,
+                    icon: const Icon(Icons.save_outlined, size: 18),
+                    label: Text(saving ? '저장 중...' : '회고 저장'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1148,6 +1446,129 @@ class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
       ),
     );
   }
+}
+
+class _PlannerWeekStrip extends StatelessWidget {
+  final List<StudyTask> tasks;
+  final Set<String> completed;
+
+  const _PlannerWeekStrip({required this.tasks, required this.completed});
+
+  @override
+  Widget build(BuildContext context) {
+    const days = ['월', '화', '수', '목', '금'];
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xffE2E6EE)),
+      ),
+      child: Row(
+        children: days.map((day) {
+          final dayTasks = tasks.where((task) => task.day == day).toList();
+          final hasTask = dayTasks.isNotEmpty;
+          final dayDone =
+              hasTask && dayTasks.every((task) => completed.contains(task.id));
+          return Expanded(
+            child: Column(
+              children: [
+                Text(day, style: const TextStyle(color: mute, fontSize: 10)),
+                const SizedBox(height: 7),
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: dayDone ? lime : (hasTask ? lavender : mist),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    dayDone ? Icons.check_rounded : Icons.circle_outlined,
+                    size: 16,
+                    color: dayDone ? Colors.white : (hasTask ? lime : mute),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _PlannerTaskRow extends StatelessWidget {
+  final StudyTask task;
+  final bool completed;
+  final ValueChanged<bool> onChanged;
+
+  const _PlannerTaskRow({
+    required this.task,
+    required this.completed,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(
+      color: surface,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: completed ? const Color(0xffAFC5FF) : const Color(0xffE2E6EE),
+      ),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: completed ? lavender : mist,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Text(
+            task.day,
+            style: const TextStyle(color: lime, fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                task.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: completed ? mute : text,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  decoration: completed ? TextDecoration.lineThrough : null,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                '${task.minutes}분 · ${task.detail}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: mute, fontSize: 10),
+              ),
+            ],
+          ),
+        ),
+        Checkbox(
+          value: completed,
+          activeColor: lime,
+          onChanged: (value) => onChanged(value ?? false),
+        ),
+      ],
+    ),
+  );
 }
 
 class InsightsHub extends StatefulWidget {

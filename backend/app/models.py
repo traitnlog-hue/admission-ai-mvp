@@ -69,3 +69,13 @@ class AnalysisResult(BaseModel):
     report: Dict[str, str]
     recommendations: List[Recommendation]
     disclaimer: str
+
+
+class AiAdmissionAnalysis(BaseModel):
+    """생성 AI가 보조하는 코칭 문장. 지원 판정 데이터가 아니다."""
+
+    summary: str = Field(min_length=1, max_length=600)
+    strengths: List[str] = Field(min_length=1, max_length=3)
+    focus_points: List[str] = Field(min_length=1, max_length=4)
+    questions_for_consultant: List[str] = Field(min_length=1, max_length=3)
+    disclaimer: str = Field(min_length=1, max_length=300)

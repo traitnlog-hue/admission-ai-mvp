@@ -59,6 +59,25 @@ Flutter 앱은 기본적으로 `http://127.0.0.1:8000`의 API를 사용합니다
 
 점수는 **전략 진단용 내부 값**이며 합격 가능성 또는 대학별 합격선을 의미하지 않습니다. 실제 대학 추천에는 해당 학년도 공식 모집요강, 전형별 모집인원, 교과 환산식, 수능최저, 전년도 입시결과를 포함한 검증된 DB와 서버 측 Rule Engine이 필요합니다.
 
+## Vertex AI 입시 코칭 보조 (선택)
+
+`POST /api/ai-admission-analysis`는 규칙 기반 분석 결과를 학생이 이해하기 쉬운 학습 코칭 문장으로 보조합니다. 이 API는 로그인한 회원만 사용할 수 있고, 합격 확률·합격선·특정 대학의 합격 가능성을 생성하지 않습니다.
+
+- Vertex AI API를 사용 설정한 Google Cloud 프로젝트에서만 서버 환경변수를 설정합니다.
+- 앱에 API 키를 넣지 않습니다. Cloud Run 배포 시 서비스 계정에 `Vertex AI User` 역할만 부여하고, 서비스 계정 키 파일은 만들지 않습니다.
+- 기본 제한은 회원당 하루 3회·전체 하루 20회·응답 700 토큰입니다. Cloud Run은 `--max-instances=1`로 배포해 MVP 한도가 인스턴스 전체에 적용되게 합니다.
+- 예산 알림은 비용을 자동으로 차단하지 않으므로, 무료 체험판을 유지하고 앱의 요청 제한도 반드시 함께 사용합니다.
+
+```bash
+export GOOGLE_CLOUD_PROJECT=mompass
+export GOOGLE_CLOUD_LOCATION=global
+export GACHI_AI_ANALYSIS_ENABLED=true
+export GACHI_AI_DAILY_LIMIT=3
+export GACHI_AI_GLOBAL_DAILY_LIMIT=20
+export GACHI_VERTEX_MODEL=gemini-2.5-flash
+uvicorn backend.app.main:app
+```
+
 ## 테스트
 
 ```bash

@@ -472,6 +472,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('GACHI ADMISSION PRO'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('결제하고 정밀 분석 시작'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('결제하고 정밀 분석 시작'), findsOneWidget);
   });
 

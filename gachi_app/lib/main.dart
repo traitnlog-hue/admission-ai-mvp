@@ -144,27 +144,16 @@ class _IntroPageState extends State<IntroPage> {
                 ),
               ),
               const Spacer(flex: 3),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xff1D2C4B),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.auto_awesome_rounded, color: Color(0xffA8EF41)),
-                    SizedBox(width: 11),
-                    Expanded(
-                      child: Text(
-                        'AI 진학 코치부터 맞춤 학원 찾기까지',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'AI 진학 코치부터 맞춤 학원 찾기까지',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xffC9D8F8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -273,16 +262,24 @@ class _ShellState extends State<Shell> {
     bottomNavigationBar: SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        height: 72,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         decoration: BoxDecoration(
-          color: const Color(0xff242F46),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 20)],
+          color: const Color(0xffFFFEFF),
+          borderRadius: BorderRadius.circular(23),
+          border: Border.all(color: const Color(0xffDCE4F1)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A243451),
+              blurRadius: 22,
+              offset: Offset(0, 8),
+            ),
+          ],
         ),
         child: Row(
           children: [
             _BottomNavButton(
-              icon: Icons.grid_view_rounded,
+              icon: Icons.home_outlined,
               label: '홈',
               selected: index == 0,
               onTap: () => setState(() => index = 0),
@@ -335,33 +332,43 @@ class _BottomNavButton extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(
     child: InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              width: 42,
-              height: 42,
+              curve: Curves.easeOutCubic,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: selected ? lime : Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
+                boxShadow: selected
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x331463ED),
+                          blurRadius: 12,
+                          offset: Offset(0, 5),
+                        ),
+                      ]
+                    : null,
               ),
               child: Icon(
                 icon,
-                size: 25,
-                color: selected ? Colors.white : const Color(0xffB9C3D5),
+                size: 22,
+                color: selected ? Colors.white : const Color(0xff7B879D),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.white : const Color(0xffB9C3D5),
+                color: selected ? lime : const Color(0xff7B879D),
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
           ],
@@ -508,7 +515,7 @@ class _Logo extends StatelessWidget {
       final logoHeight = logoWidth / 6;
 
       return Semantics(
-        label: 'GACHI, 같이 배우고 더 큰 가치를 만듭니다',
+        label: 'GACHI',
         button: onTap != null,
         image: true,
         // 원본 PNG의 투명 여백을 상쇄해 실제 워드마크 기준으로 20px을 맞춘다.
@@ -521,6 +528,7 @@ class _Logo extends StatelessWidget {
               width: logoWidth,
               height: logoHeight,
               child: Stack(
+                clipBehavior: Clip.none,
                 children: [
                   Image.asset(
                     'assets/branding/gachi_horizontal_logo.png',
@@ -530,13 +538,12 @@ class _Logo extends StatelessWidget {
                     filterQuality: FilterQuality.high,
                   ),
                   Positioned(
-                    left: logoWidth * 0.505,
-                    top: logoHeight * 0.31,
-                    child: Container(
-                      width: logoWidth * 0.012,
-                      height: logoHeight * 0.39,
-                      color: mist,
-                    ),
+                    // 원본 가로형 로고의 구분선·태그라인 잔여 픽셀을 완전히 숨긴다.
+                    left: logoWidth * 0.5,
+                    top: 0,
+                    right: -80,
+                    bottom: 0,
+                    child: const ColoredBox(color: mist),
                   ),
                 ],
               ),
@@ -1220,6 +1227,11 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
       subjects: subjects.toList(),
       level: level,
       academyCondition: academyCondition.text.trim(),
+    );
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(
+      'gachi.student.profile',
+      jsonEncode(profile.toJson()),
     );
     List<Map<String, dynamic>> matches = [];
     try {
@@ -1914,6 +1926,58 @@ class Coach extends StatelessWidget {
   final VoidCallback? onOpenHome;
 
   const Coach({super.key, this.user, this.onRequireLogin, this.onOpenHome});
+
+  Future<void> _openCoachPlus(BuildContext context) async {
+    if (user != null && !user!.isGuest) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PremiumAdmissionOffer()),
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.lock_outline_rounded, color: lime, size: 30),
+              const SizedBox(height: 12),
+              const Text(
+                'COACH+ 플랜은\n회원 전용이에요.',
+                style: TextStyle(
+                  color: text,
+                  fontSize: 23,
+                  height: 1.2,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '회원가입 또는 로그인 후 프로그램 구성과 결제 내용을 확인할 수 있어요. 영수증 티켓은 사용하지 않습니다.',
+                style: TextStyle(color: mute, fontSize: 12, height: 1.5),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    onRequireLogin?.call();
+                  },
+                  child: const Text('회원가입·로그인하기'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext c) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
@@ -1959,50 +2023,94 @@ class Coach extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: navy,
+          color: const Color(0xff121A2E),
           borderRadius: BorderRadius.circular(25),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            const Text(
-              'ADMISSION SNAPSHOT',
-              style: TextStyle(
-                color: Color(0xffAFC5FF),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: .8,
-              ),
-            ),
-            const SizedBox(height: 9),
-            const Text(
-              '대입 전략을\n새로 진단해볼까요?',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 25,
-                height: 1.15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: () => openTicketProtectedFeature(
-                context: c,
-                user: user,
-                onRequireLogin: onRequireLogin,
-                featureName: '무료 대입전략 진단',
-                destination: const AdmissionStrategyHub(),
-              ),
-              icon: const Icon(Icons.insights_outlined, size: 18),
-              label: const Text('입시 전략 진단 시작'),
-              style: FilledButton.styleFrom(
-                backgroundColor: lime,
-                foregroundColor: navy,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 15,
-                  vertical: 12,
+            Positioned(
+              right: -18,
+              bottom: -16,
+              child: IgnorePointer(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: const Color(0xff5FA5FF).withValues(alpha: .34),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 22,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: const Color(0xff5FA5FF).withValues(alpha: .54),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 22,
+                      height: 92,
+                      decoration: BoxDecoration(
+                        color: lime.withValues(alpha: .8),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'NEXT STRATEGY',
+                  style: TextStyle(
+                    color: Color(0xffAAC8FF),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: .8,
+                  ),
+                ),
+                const SizedBox(height: 9),
+                const Text(
+                  '목표 대학까지의\n다음 단계를 찾아요',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    height: 1.15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  '성적과 학생부를 바탕으로 지금 필요한 전략을 정리해요.',
+                  style: TextStyle(
+                    color: Color(0xffCAD7EE),
+                    fontSize: 11,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FilledButton.icon(
+                  onPressed: () => _openCoachPlus(c),
+                  icon: const Icon(Icons.insights_outlined, size: 18),
+                  label: const Text('COACH+ 플랜 보기'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xffB8E8FF),
+                    foregroundColor: const Color(0xff111D38),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

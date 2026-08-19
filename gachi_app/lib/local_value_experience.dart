@@ -325,6 +325,8 @@ class _ReceiptVerificationPageState extends State<ReceiptVerificationPage> {
   int rating = 4;
   bool submitting = false;
 
+  int get _reviewLength => review.text.trim().runes.length;
+
   @override
   void dispose() {
     academy.dispose();
@@ -393,7 +395,14 @@ class _ReceiptVerificationPageState extends State<ReceiptVerificationPage> {
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.verified_rounded, color: lime, size: 36),
         title: const Text('인증 보상이 지급됐어요'),
-        content: const Text('진단 티켓 1매와 교육 포인트 500P가 적립됐습니다.'),
+        content: const Text(
+          '진단 티켓 1매와 교육 포인트 500P가 적립됐습니다.\n\n'
+          '500P 사용 안내\n'
+          '• 프리미엄 대입 전략 리포트 혜택\n'
+          '• 입시 컨설턴트 매칭 신청 혜택\n'
+          '• 학원 상담·체험 예약 혜택\n\n'
+          '현재 MVP에서는 포인트를 적립·조회할 수 있으며, 실제 차감 사용은 운영 오픈 후 제공됩니다.',
+        ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -501,11 +510,26 @@ class _ReceiptVerificationPageState extends State<ReceiptVerificationPage> {
           TextFormField(
             controller: review,
             maxLines: 4,
+            onChanged: (_) => setState(() {}),
             decoration: _inputDecoration(
               hint: '수업·관리 방식과 실제로 도움 받은 점을 20자 이상 적어 주세요.',
             ),
             validator: (value) =>
                 (value?.trim().length ?? 0) < 20 ? '후기를 20자 이상 입력해 주세요.' : null,
+          ),
+          const SizedBox(height: 7),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              _reviewLength >= 20
+                  ? '$_reviewLength자 작성 · 등록 가능'
+                  : '$_reviewLength / 20자 · ${20 - _reviewLength}자 더 작성해 주세요',
+              style: TextStyle(
+                color: _reviewLength >= 20 ? lime : mute,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           const Text(
@@ -987,6 +1011,7 @@ class _ReceiptEdgeClipper extends CustomClipper<Path> {
 class ValueAcademy {
   final String name;
   final String region;
+  final String neighborhood;
   final String subject;
   final int monthlyFee;
   final String format;
@@ -996,6 +1021,7 @@ class ValueAcademy {
   const ValueAcademy({
     required this.name,
     required this.region,
+    required this.neighborhood,
     required this.subject,
     required this.monthlyFee,
     required this.format,
@@ -1008,6 +1034,7 @@ const valueAcademies = <ValueAcademy>[
   ValueAcademy(
     name: '강남권 수학 소수정예 A',
     region: '강남',
+    neighborhood: '대치동',
     subject: '수학',
     monthlyFee: 28,
     format: '6명 이하·오답 클리닉',
@@ -1017,6 +1044,7 @@ const valueAcademies = <ValueAcademy>[
   ValueAcademy(
     name: '목동권 영어 내신반 B',
     region: '목동',
+    neighborhood: '목동',
     subject: '영어',
     monthlyFee: 24,
     format: '학교별 내신·주 2회',
@@ -1026,6 +1054,7 @@ const valueAcademies = <ValueAcademy>[
   ValueAcademy(
     name: '노원권 국어 독서논술 C',
     region: '노원',
+    neighborhood: '중계동',
     subject: '국어',
     monthlyFee: 19,
     format: '독서·비문학 반복',
@@ -1035,6 +1064,7 @@ const valueAcademies = <ValueAcademy>[
   ValueAcademy(
     name: '분당권 과학 탐구반 D',
     region: '분당',
+    neighborhood: '정자동',
     subject: '과학',
     monthlyFee: 30,
     format: '실험·내신 서술형',
@@ -1044,6 +1074,7 @@ const valueAcademies = <ValueAcademy>[
   ValueAcademy(
     name: '송파권 수학 오답관리 E',
     region: '송파',
+    neighborhood: '잠실동',
     subject: '수학',
     monthlyFee: 26,
     format: '매일 20분 오답 체크',
@@ -1053,11 +1084,32 @@ const valueAcademies = <ValueAcademy>[
   ValueAcademy(
     name: '마포권 영어 소수정예 F',
     region: '마포',
+    neighborhood: '상암동',
     subject: '영어',
     monthlyFee: 22,
     format: '문법·독해 개별 처방',
     signal: '기초 복구 후기 유형',
     teacherType: '단계별 설명형 강사',
+  ),
+  ValueAcademy(
+    name: '강남권 영어 내신 클리닉 G',
+    region: '강남',
+    neighborhood: '역삼동',
+    subject: '영어',
+    monthlyFee: 27,
+    format: '주 2회·서술형 첨삭',
+    signal: '내신 등급 상승 후기 유형',
+    teacherType: '학교별 분석형 강사',
+  ),
+  ValueAcademy(
+    name: '강남권 수학 심화반 H',
+    region: '강남',
+    neighborhood: '도곡동',
+    subject: '수학',
+    monthlyFee: 29,
+    format: '4명 이하·심화 문제',
+    signal: '심화 문제 자신감 후기 유형',
+    teacherType: '풀이 과정 코칭형 강사',
   ),
 ];
 
@@ -1234,21 +1286,54 @@ class _AcademyProfileInline extends StatelessWidget {
 }
 
 class ValueAcademyMapPage extends StatefulWidget {
-  const ValueAcademyMapPage({super.key});
+  final String? studentRegion;
+
+  const ValueAcademyMapPage({super.key, this.studentRegion});
 
   @override
   State<ValueAcademyMapPage> createState() => _ValueAcademyMapPageState();
 }
 
 class _ValueAcademyMapPageState extends State<ValueAcademyMapPage> {
+  static const _subareasByDistrict = <String, List<String>>{
+    '강남': ['전체', '대치동', '역삼동', '도곡동'],
+    '목동': ['전체', '목동', '신정동'],
+    '노원': ['전체', '중계동', '상계동', '하계동'],
+    '송파': ['전체', '잠실동', '문정동', '가락동'],
+    '마포': ['전체', '상암동', '공덕동', '합정동'],
+    '분당': ['전체', '정자동', '서현동', '수내동', '판교동'],
+  };
+
   String region = '전체';
+  String neighborhood = '전체';
   String subject = '전체';
   double maxFee = 30;
   bool resultFirst = false;
 
+  String? get _registeredDistrict {
+    final value = widget.studentRegion;
+    if (value == null) return null;
+    if (value.contains('강남구')) return '강남';
+    if (value.contains('양천구')) return '목동';
+    if (value.contains('노원구')) return '노원';
+    if (value.contains('송파구')) return '송파';
+    if (value.contains('마포구')) return '마포';
+    if (value.contains('분당구')) return '분당';
+    return null;
+  }
+
+  bool get _hasRegisteredDistrict => _registeredDistrict != null;
+
+  @override
+  void initState() {
+    super.initState();
+    region = _registeredDistrict ?? '전체';
+  }
+
   List<ValueAcademy> get visible {
     final result = valueAcademies.where((academy) {
       return (region == '전체' || academy.region == region) &&
+          (neighborhood == '전체' || academy.neighborhood == neighborhood) &&
           (subject == '전체' || academy.subject == subject) &&
           academy.monthlyFee <= maxFee;
     }).toList();
@@ -1264,7 +1349,7 @@ class _ValueAcademyMapPageState extends State<ValueAcademyMapPage> {
   Widget build(BuildContext context) {
     final items = visible;
     final mapQuery =
-        '${region == '전체' ? '서울' : region} ${subject == '전체' ? '학원' : '$subject 학원'}';
+        '${widget.studentRegion ?? (region == '전체' ? '서울' : region)} ${neighborhood == '전체' ? '' : neighborhood} ${subject == '전체' ? '학원' : '$subject 학원'}';
     return Scaffold(
       backgroundColor: mist,
       appBar: AppBar(backgroundColor: mist, title: const Text('갓성비 학원·강사 맵')),
@@ -1286,11 +1371,48 @@ class _ValueAcademyMapPageState extends State<ValueAcademyMapPage> {
             style: TextStyle(color: mute, fontSize: 11),
           ),
           const SizedBox(height: 17),
+          if (_hasRegisteredDistrict) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: lavender,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, color: lime, size: 18),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      '${widget.studentRegion} 등록 지역의 세부 동네를 골라보세요.',
+                      style: const TextStyle(
+                        color: text,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           _FilterStrip(
-            label: '동네',
-            values: const ['전체', '강남', '목동', '노원', '송파', '마포', '분당'],
-            selected: region,
-            onChanged: (value) => setState(() => region = value),
+            label: _hasRegisteredDistrict
+                ? '${_registeredDistrict} 세부 지역'
+                : '동네',
+            values: _hasRegisteredDistrict
+                ? _subareasByDistrict[_registeredDistrict]!
+                : const ['전체', '강남', '목동', '노원', '송파', '마포', '분당'],
+            selected: _hasRegisteredDistrict ? neighborhood : region,
+            onChanged: (value) => setState(() {
+              if (_hasRegisteredDistrict) {
+                neighborhood = value;
+              } else {
+                region = value;
+                neighborhood = '전체';
+              }
+            }),
           ),
           const SizedBox(height: 9),
           _FilterStrip(
@@ -1467,7 +1589,7 @@ class _ValueAcademyCard extends StatelessWidget {
         ),
         const SizedBox(height: 7),
         Text(
-          '${academy.region} · ${academy.subject} · ${academy.format}',
+          '${academy.region} ${academy.neighborhood} · ${academy.subject} · ${academy.format}',
           style: const TextStyle(color: mute, fontSize: 10),
         ),
         const SizedBox(height: 10),
@@ -1480,7 +1602,7 @@ class _ValueAcademyCard extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: () => openKakaoMapSearch(
             context,
-            '${academy.region} ${academy.subject} 학원',
+            '${academy.region} ${academy.neighborhood} ${academy.subject} 학원',
           ),
           icon: const Icon(Icons.location_on_outlined, size: 17),
           label: const Text('카카오맵에서 후보 비교'),
@@ -1810,6 +1932,7 @@ class _QuickReportBlock extends StatelessWidget {
 class LocalIntelReport {
   final String category;
   final String region;
+  final String authorLabel;
   final String title;
   final String body;
   final String proofStatus;
@@ -1819,6 +1942,7 @@ class LocalIntelReport {
   const LocalIntelReport({
     required this.category,
     required this.region,
+    this.authorLabel = '익명 제보자',
     required this.title,
     required this.body,
     required this.proofStatus,
@@ -1829,6 +1953,7 @@ class LocalIntelReport {
   Map<String, dynamic> toJson() => {
     'category': category,
     'region': region,
+    'authorLabel': authorLabel,
     'title': title,
     'body': body,
     'proofStatus': proofStatus,
@@ -1840,6 +1965,7 @@ class LocalIntelReport {
       LocalIntelReport(
         category: json['category'] as String,
         region: json['region'] as String,
+        authorLabel: json['authorLabel'] as String? ?? '익명 제보자',
         title: json['title'] as String,
         body: json['body'] as String,
         proofStatus: json['proofStatus'] as String,
@@ -2096,6 +2222,11 @@ class _IntelFeedCard extends StatelessWidget {
                 item.time,
                 style: const TextStyle(color: mute, fontSize: 10),
               ),
+              const SizedBox(width: 7),
+              Text(
+                item.authorLabel,
+                style: const TextStyle(color: mute, fontSize: 10),
+              ),
               const Spacer(),
               IconButton(
                 onPressed: () => ScaffoldMessenger.of(context)
@@ -2180,6 +2311,14 @@ class _IntelReportFormState extends State<IntelReportForm> {
   final detail = TextEditingController();
   PlatformFile? evidence;
 
+  String get _example => switch (category) {
+    '핫딜' => '예: 8월 19일 상담에서 신규 등록 시 레벨테스트 비용 면제 안내를 받았습니다. 적용 기간은 8월 말까지였습니다.',
+    '비용' => '예: 8월 수강료는 월 28만원이었고, 영수증 결제 금액은 교재비 포함 31만원이었습니다.',
+    '마감' => '예: 8월 19일 기준 중간고사 대비반은 대기 접수 중이라고 안내받았습니다.',
+    '수업' => '예: 주 2회 90분 수업이며, 오답 클리닉은 별도 신청으로 안내받았습니다.',
+    _ => '예: 8월 19일 상담에서 확인한 일정·비용·운영 안내를 날짜와 함께 작성해 주세요.',
+  };
+
   @override
   void dispose() {
     academy.dispose();
@@ -2203,7 +2342,7 @@ class _IntelReportFormState extends State<IntelReportForm> {
     final phone = RegExp(r'01[016789][-\s]?\d{3,4}[-\s]?\d{4}');
     if (label.length < 2 || body.length < 20 || evidence == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('학원명, 20자 이상 내용, 증빙 이미지를 확인해 주세요.')),
+        const SnackBar(content: Text('학원명, 20자 이상 내용, 결제 영수증 이미지를 확인해 주세요.')),
       );
       return;
     }
@@ -2218,18 +2357,12 @@ class _IntelReportFormState extends State<IntelReportForm> {
       LocalIntelReport(
         category: category,
         region: region,
-        title: '${_maskAcademy(label)} $category 제보',
+        title: '학원·강사명 검수 중 · $category 제보',
         body: body,
-        proofStatus: '영수증 인증 회원 · 운영진 검수 대기',
+        proofStatus: '작성자 익명 · 운영진 검수 대기',
         time: '방금',
       ),
     );
-  }
-
-  String _maskAcademy(String value) {
-    if (value.length <= 2) return '${value.substring(0, 1)}○';
-    final middle = List.filled(value.length - 2, '○').join();
-    return '${value.substring(0, 1)}$middle${value.substring(value.length - 1)}';
   }
 
   @override
@@ -2250,14 +2383,14 @@ class _IntelReportFormState extends State<IntelReportForm> {
         ),
         const SizedBox(height: 7),
         const Text(
-          '제보는 바로 실명 게시되지 않고, 학원명 익명화와 운영진 검수를 거칩니다.',
+          '작성자는 익명으로 게시되며, 학원·강사명은 증빙과 운영 검수 후 공개합니다.',
           style: TextStyle(color: mute, fontSize: 11),
         ),
         const SizedBox(height: 18),
         const _FormLabel('제보 유형'),
         Wrap(
           spacing: 7,
-          children: ['핫딜', '비용', '마감', '수업']
+          children: ['핫딜', '비용', '마감', '수업', '기타']
               .map(
                 (item) => ChoiceChip(
                   label: Text(item),
@@ -2278,23 +2411,69 @@ class _IntelReportFormState extends State<IntelReportForm> {
           onChanged: (value) => setState(() => region = value!),
         ),
         const SizedBox(height: 16),
-        const _FormLabel('학원·강사명'),
+        const _FormLabel('학원·강사명 (운영 검수용)'),
         TextField(
           controller: academy,
-          decoration: _inputDecoration(hint: '게시시 자동으로 익명 처리됩니다.'),
+          decoration: _inputDecoration(hint: '증빙 확인 후 공개 여부를 검토합니다.'),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: lavender,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.visibility_off_outlined, color: lime, size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '게시되는 작성자 정보는 항상 익명입니다. 연락처·학교·학생 이름은 입력하지 마세요.',
+                  style: TextStyle(color: text, fontSize: 10, height: 1.45),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         const _FormLabel('제보 내용'),
+        Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: const Color(0xffFFF5E9),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '이렇게 작성해요',
+                style: TextStyle(
+                  color: text,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                _example,
+                style: const TextStyle(color: mute, fontSize: 10, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 9),
         TextField(
           controller: detail,
           minLines: 4,
           maxLines: 7,
           decoration: _inputDecoration(
-            hint: '날짜·금액·상담 내용 등 직접 확인한 사실만 적어 주세요.',
+            hint: '예시처럼 날짜·금액·안내 내용을 사실 중심으로 적어 주세요.',
           ),
         ),
         const SizedBox(height: 16),
-        const _FormLabel('영수증·안내문 증빙'),
+        const _FormLabel('결제 영수증 증빙'),
         OutlinedButton.icon(
           onPressed: _pick,
           style: OutlinedButton.styleFrom(
@@ -2306,7 +2485,12 @@ class _IntelReportFormState extends State<IntelReportForm> {
                 : Icons.check_circle,
             color: evidence == null ? mute : lime,
           ),
-          label: Text(evidence?.name ?? '이미지 선택'),
+          label: Text(evidence?.name ?? '결제 영수증 이미지 선택'),
+        ),
+        const SizedBox(height: 7),
+        const Text(
+          '결제 영수증 사진만 제출할 수 있어요. 안내문·대화 캡처·성적표는 받지 않습니다.',
+          style: TextStyle(color: mute, fontSize: 9, height: 1.45),
         ),
         const SizedBox(height: 14),
         const Text(

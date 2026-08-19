@@ -332,11 +332,11 @@ class _AssistantBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: navy,
-    borderRadius: BorderRadius.circular(22),
+    color: const Color(0xffEEF4FF),
+    borderRadius: BorderRadius.circular(20),
     child: InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(20),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Row(
@@ -345,13 +345,11 @@ class _AssistantBanner extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const Icon(
-                Icons.chat_bubble_outline_rounded,
                 color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: const Color(0xffD7E5FB)),
               ),
+              child: const Icon(Icons.chat_bubble_outline_rounded, color: lime),
             ),
             const SizedBox(width: 13),
             const Expanded(
@@ -360,20 +358,17 @@ class _AssistantBanner extends StatelessWidget {
                 children: [
                   Text(
                     'GACHI AI에게 물어보기',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(color: text, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 4),
                   Text(
-                    '어떤 활동부터 시작할지 함께 찾아드려요.',
-                    style: TextStyle(color: Color(0xffCBD5E7), fontSize: 11),
+                    '막힌 지점부터 오늘의 우선순위까지 함께 정리해요.',
+                    style: TextStyle(color: mute, fontSize: 11),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+            const Icon(Icons.arrow_forward_rounded, color: lime),
           ],
         ),
       ),

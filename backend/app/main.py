@@ -12,7 +12,8 @@ from .academies import recommendations
 from .auth import initialize_auth, login, logout, register, user_for_token
 from .engine import analyze
 from .importer import parse_official_csv
-from .models import AnalysisResult, StudentProfile
+from .models import AiAdmissionAnalysis, AnalysisResult, StudentProfile
+from .vertex_ai import generate_ai_analysis
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 FRONTEND_DIR = ROOT_DIR / "frontend"
@@ -136,6 +137,18 @@ async def import_admissions(request: Request, x_admin_token: Optional[str] = Hea
 def admission_analysis(profile: StudentProfile) -> AnalysisResult:
     """규칙 기반 분석 결과를 반환한다. 합격선은 생성하거나 추론하지 않는다."""
     return analyze(profile)
+
+
+@app.post("/api/ai-admission-analysis", response_model=AiAdmissionAnalysis)
+def ai_admission_analysis(
+    profile: StudentProfile,
+    authorization: Optional[str] = Header(default=None),
+) -> AiAdmissionAnalysis:
+    """로그인 회원만 사용할 수 있는 Vertex AI 입시 코칭 보조 API."""
+    account = user_for_token(_bearer_token(authorization))
+    if account is None:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+    return generate_ai_analysis(profile, str(account["email"]))
 
 
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="web")
