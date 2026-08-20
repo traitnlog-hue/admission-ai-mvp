@@ -133,18 +133,23 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _editProfile() async {
-    final profile = await Navigator.push<AcademyStudentProfile>(
+    final result = await Navigator.push<AcademyMatchFormResult>(
       context,
       MaterialPageRoute(
         builder: (_) => AcademyMatchForm(initial: academyProfile),
       ),
     );
-    if (profile != null && mounted) {
+    if (result != null && mounted) {
       setState(() {
-        academyProfile = profile;
-        insightGrade = profile.grade;
+        academyProfile = result.profile;
+        insightGrade = result.profile?.grade ?? '고3';
       });
-      await _saveProfile();
+      if (result.reset) {
+        final preferences = await SharedPreferences.getInstance();
+        await preferences.remove(_profileKey);
+      } else {
+        await _saveProfile();
+      }
     }
   }
 
@@ -1272,6 +1277,35 @@ class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
     widget.onToggle(id, value);
   }
 
+  void _showTestReminder(List<StudyTask> tasks) {
+    final pending = tasks
+        .where((task) => !completed.contains(task.id))
+        .length;
+    final count = pending == 0 ? 1 : pending;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 7),
+          content: Row(
+            children: [
+              const Icon(Icons.notifications_active_rounded, color: Colors.white),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text('미완료 플랜 $count개가 있어요. 오늘의 계획을 다시 확인해 보세요.'),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: '확인',
+            textColor: const Color(0xffBFD4FF),
+            onPressed: () {},
+          ),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasks = widget.goals.expand(buildWeeklyTasks).toList();
@@ -1357,6 +1391,27 @@ class _WeeklyCoachPlanState extends State<WeeklyCoachPlan> {
                   onChanged: widget.onReminderChanged,
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: widget.remindersEnabled
+                ? () => _showTestReminder(tasks)
+                : null,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xff315A9E),
+              side: const BorderSide(color: Color(0xffC8D7F5)),
+              minimumSize: const Size.fromHeight(44),
+            ),
+            icon: const Icon(Icons.notifications_none_rounded, size: 18),
+            label: const Text('테스트 알림 보기'),
+          ),
+          const SizedBox(height: 3),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '테스트 알림은 앱 안에서 바로 표시됩니다. 실제 푸시 알림은 FCM 연결 후 제공돼요.',
+              style: TextStyle(color: mute, fontSize: 9, height: 1.45),
             ),
           ),
           const SizedBox(height: 16),

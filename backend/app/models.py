@@ -79,3 +79,27 @@ class AiAdmissionAnalysis(BaseModel):
     focus_points: List[str] = Field(min_length=1, max_length=4)
     questions_for_consultant: List[str] = Field(min_length=1, max_length=3)
     disclaimer: str = Field(min_length=1, max_length=300)
+
+
+class ReceiptOcrRequest(BaseModel):
+    image_base64: str = Field(min_length=40, max_length=7_000_000)
+    mime_type: Literal["image/jpeg", "image/png", "image/webp"]
+
+
+class ReceiptOcrResult(BaseModel):
+    academy: Optional[str] = Field(default=None, max_length=80)
+    receipt_number: Optional[str] = Field(default=None, max_length=80)
+    amount: Optional[str] = Field(default=None, max_length=20)
+    paid_at: Optional[str] = Field(default=None, pattern=r"^20\d{2}-\d{2}-\d{2}$")
+    notice: str
+
+
+class PaymentPrepareRequest(BaseModel):
+    items: list[str] = Field(min_length=1, max_length=10)
+
+
+class PaymentConfirmRequest(BaseModel):
+    payment_key: str = Field(min_length=10, max_length=300)
+    order_id: str = Field(min_length=6, max_length=80)
+    amount: int = Field(gt=0, le=2_000_000)
+    order_token: str = Field(min_length=20, max_length=3000)

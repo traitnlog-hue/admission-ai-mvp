@@ -41,6 +41,8 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- `?v=local` keeps a previously installed Flutter service worker from
+       returning an old bootstrap bundle during local MVP review. -->
+  <script src="flutter_bootstrap.js?v=local" async></script>
 </body>
 </html>

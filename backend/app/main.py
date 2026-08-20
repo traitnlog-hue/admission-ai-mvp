@@ -12,7 +12,10 @@ from .academies import recommendations
 from .auth import initialize_auth, login, logout, register, user_for_token
 from .engine import analyze
 from .importer import parse_official_csv
-from .models import AiAdmissionAnalysis, AnalysisResult, StudentProfile
+from .official_data import import_reviewed_admissions, sources as official_sources
+from .models import AiAdmissionAnalysis, AnalysisResult, PaymentConfirmRequest, PaymentPrepareRequest, ReceiptOcrRequest, ReceiptOcrResult, StudentProfile
+from .payments import confirm_order, prepare_order
+from .receipt_ocr import scan_receipt
 from .vertex_ai import generate_ai_analysis
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -28,6 +31,8 @@ app.add_middleware(
         "http://127.0.0.1:8000",
         "http://localhost:8080",
         "http://127.0.0.1:8080",
+        "http://localhost:7397",
+        "http://127.0.0.1:7397",
     ],
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
@@ -108,6 +113,15 @@ def list_admissions(year: int) -> dict:
     return {"items": admissions_for_year(year), "notice": "verified 데이터만 실제 컨설팅 판단에 사용하세요."}
 
 
+@app.get("/api/official-data/sources")
+def list_official_sources() -> dict:
+    """서비스에서 사용하는 교육부·대교협·대학 공식 출처와 검수 이력을 공개한다."""
+    return {
+        "items": official_sources(),
+        "notice": "전형 데이터는 원문 출처·확인일·검수 상태를 함께 표시합니다. 모집요강 정정 공지는 원문을 우선합니다.",
+    }
+
+
 @app.post("/api/academy-recommendations")
 async def academy_recommendations(request: Request) -> dict:
     """공공데이터 CSV에서만 추천하며, 학생 정보는 저장하지 않는다."""
@@ -133,10 +147,53 @@ async def import_admissions(request: Request, x_admin_token: Optional[str] = Hea
     return {"imported": len(records), "data_status": "verified"}
 
 
+@app.post("/api/admin/official-sources/{source_id}/import-admissions")
+async def import_official_source_admissions(
+    source_id: str,
+    request: Request,
+    x_admin_token: Optional[str] = Header(default=None),
+) -> dict:
+    """검수된 CSV를 출처 ID에 연결해 반영하고, 반영 이력을 남긴다."""
+    expected_token = os.getenv("ADMIN_API_TOKEN")
+    if not expected_token or x_admin_token != expected_token:
+        raise HTTPException(status_code=403, detail="관리자 토큰이 필요합니다.")
+    try:
+        imported = import_reviewed_admissions(
+            source_id,
+            (await request.body()).decode("utf-8-sig"),
+        )
+    except (UnicodeDecodeError, ValueError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {
+        "imported": imported,
+        "source_id": source_id,
+        "data_status": "verified",
+        "notice": "출처와 반영 이력이 기록되었습니다.",
+    }
+
+
 @app.post("/api/analyze", response_model=AnalysisResult)
 def admission_analysis(profile: StudentProfile) -> AnalysisResult:
     """규칙 기반 분석 결과를 반환한다. 합격선은 생성하거나 추론하지 않는다."""
     return analyze(profile)
+
+
+@app.post("/api/receipt-ocr", response_model=ReceiptOcrResult)
+def receipt_ocr(request: ReceiptOcrRequest) -> ReceiptOcrResult:
+    """영수증 사진에서 입력 보조 필드만 추출하며, 원본 파일은 저장하지 않는다."""
+    return scan_receipt(request)
+
+
+@app.post("/api/payments/prepare")
+def payment_prepare(request: PaymentPrepareRequest) -> dict:
+    """Server-calculated and signed Toss Payments order. Never trust client totals."""
+    return prepare_order(request.items)
+
+
+@app.post("/api/payments/confirm")
+def payment_confirm(request: PaymentConfirmRequest) -> dict:
+    """Confirms Toss authentication only after matching the server-signed order."""
+    return confirm_order(request.payment_key, request.order_id, request.amount, request.order_token)
 
 
 @app.post("/api/ai-admission-analysis", response_model=AiAdmissionAnalysis)

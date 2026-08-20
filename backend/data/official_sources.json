@@ -1,0 +1,80 @@
+[
+  {
+    "source_id": "moe-2028-admission-policy",
+    "organization": "교육부",
+    "title": "2028학년도 대학입시 관련 정보",
+    "kind": "policy",
+    "scope": "2028 대입제도·고교 내신·수능 변경사항",
+    "source_url": "https://www.moe.go.kr/boardCnts/viewRenew.do?boardID=294&boardSeq=104960&lev=0",
+    "refresh_cycle": "정책 공고 시",
+    "license_note": "공공누리 및 원문별 이용조건을 확인한 뒤 출처를 표시합니다.",
+    "latest_year": 2028,
+    "last_checked_at": "2026-08-20",
+    "status": "verified"
+  },
+  {
+    "source_id": "khe-adiga-admissions",
+    "organization": "한국대학교육협의회·대입정보포털 어디가",
+    "title": "대입상담·전형·성적분석 정보",
+    "kind": "official_portal",
+    "scope": "학생부·수능/모의 성적, 대학·학과·전형 기준 정보",
+    "source_url": "https://www.adiga.kr/",
+    "refresh_cycle": "대입연도별 공고·정정 시",
+    "license_note": "원문 URL과 확인일을 함께 기록하고, 개별 서비스 이용조건을 확인합니다.",
+    "latest_year": 2027,
+    "last_checked_at": "2026-08-20",
+    "status": "verified"
+  },
+  {
+    "source_id": "data-go-kr-khe-major",
+    "organization": "공공데이터포털·한국대학교육협의회",
+    "title": "대학별 학과정보 OpenAPI",
+    "kind": "open_api",
+    "scope": "대학·학과 기본 정보, 교육목표, 학위과정, 입학정원",
+    "source_url": "https://www.data.go.kr/data/15158666/openapi.do",
+    "refresh_cycle": "API 동기화 일 1회",
+    "license_note": "무료 REST API이며 서비스키는 서버 비밀값으로만 보관합니다.",
+    "latest_year": 2026,
+    "last_checked_at": "2026-08-20",
+    "status": "configured"
+  },
+  {
+    "source_id": "snu-2027-admissions",
+    "organization": "서울대학교 입학본부",
+    "title": "2027학년도 대학 신입학생 입학전형 안내",
+    "kind": "university_pdf",
+    "scope": "수시·정시 전형, 모집단위, 모집인원, 전형일정, 수능 응시영역·교과이수 기준",
+    "source_url": "https://admission.snu.ac.kr/",
+    "refresh_cycle": "모집요강·정정 공지 시",
+    "license_note": "공식 모집요강 원문 URL·발행일·파일 해시를 보관하고, 대학 공지 원문을 우선합니다.",
+    "latest_year": 2027,
+    "last_checked_at": "2026-08-20",
+    "status": "verified"
+  },
+  {
+    "source_id": "korea-2027-rolling",
+    "organization": "고려대학교 입학처",
+    "title": "2027학년도 고려대학교 서울캠퍼스 수시모집 요강",
+    "kind": "university_pdf",
+    "scope": "수시 모집단위·전형·모집인원·지원자격·전형방법",
+    "source_url": "https://admission.korea.ac.kr/",
+    "refresh_cycle": "모집요강·정정 공지 시",
+    "license_note": "관리자 검수 후 전형 단위로만 공개합니다.",
+    "latest_year": 2027,
+    "last_checked_at": "2026-08-20",
+    "status": "review_required"
+  },
+  {
+    "source_id": "yonsei-2027-admissions",
+    "organization": "연세대학교 입학처",
+    "title": "2027학년도 연세대학교 입학전형 요강",
+    "kind": "university_pdf",
+    "scope": "수시·정시 모집요강 및 전형별 일정",
+    "source_url": "https://admission.yonsei.ac.kr/",
+    "refresh_cycle": "모집요강·정정 공지 시",
+    "license_note": "관리자 검수 후 전형 단위로만 공개합니다.",
+    "latest_year": 2027,
+    "last_checked_at": "2026-08-20",
+    "status": "review_required"
+  }
+]

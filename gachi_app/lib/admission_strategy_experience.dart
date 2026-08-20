@@ -893,10 +893,7 @@ class StrategyFreeResultPage extends StatelessWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ConsultantMatchingPage(
-                        strategyTitle: group.title,
-                        grade: result['grade'] as String,
-                      ),
+                      builder: (_) => PremiumAdmissionOffer(freeResult: result),
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -905,7 +902,7 @@ class StrategyFreeResultPage extends StatelessWidget {
                     minimumSize: const Size.fromHeight(48),
                   ),
                   icon: const Icon(Icons.people_alt_outlined, size: 18),
-                  label: const Text('입시 컨설턴트 매칭 요청'),
+                  label: const Text('유료 컨설턴트 매칭 시작'),
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
@@ -959,6 +956,42 @@ const _consultantProfiles = <ConsultantProfile>[
     role: '계열·전공 탐색 전문',
     specialty: '희망 전공 기반의 선택과목·활동 설계',
     experience: '진학 상담 6년',
+  ),
+];
+
+/// MVP에서 노출하는 전체 컨설턴트 목록입니다.
+/// 운영 전환 시에는 이 목록을 관리자 승인된 서버 데이터로 교체합니다.
+const _allConsultantProfiles = <ConsultantProfile>[
+  ..._consultantProfiles,
+  ConsultantProfile(
+    name: '최민지 컨설턴트',
+    role: '수시·학생부종합전형 전문',
+    specialty: '세특·활동 흐름을 전공 목표에 맞춰 정리하는 전략',
+    experience: '진학 상담 9년',
+  ),
+  ConsultantProfile(
+    name: '윤태호 컨설턴트',
+    role: '자연계·의약학계열 전문',
+    specialty: '이공·의약학 계열의 교과·비교과 균형 설계',
+    experience: '진학 상담 12년',
+  ),
+  ConsultantProfile(
+    name: '정다은 컨설턴트',
+    role: '인문·상경계열 전문',
+    specialty: '희망 전공과 교내 활동을 연결하는 서류 전략',
+    experience: '진학 상담 7년',
+  ),
+  ConsultantProfile(
+    name: '한유진 컨설턴트',
+    role: '고입·특목자사고 전문',
+    specialty: '고교 선택과 지원 일정에 맞춘 준비 전략',
+    experience: '진학 상담 10년',
+  ),
+  ConsultantProfile(
+    name: '오세진 컨설턴트',
+    role: '재수·정시 지원 전문',
+    specialty: '수능 성적 기반의 안정·적정·상향 지원 설계',
+    experience: '진학 상담 8년',
   ),
 ];
 

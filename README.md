@@ -78,6 +78,18 @@ export GACHI_VERTEX_MODEL=gemini-2.5-flash
 uvicorn backend.app.main:app
 ```
 
+## 영수증 OCR (선택)
+
+`POST /api/receipt-ocr`는 Google Cloud Vision의 `DOCUMENT_TEXT_DETECTION`으로 영수증에서 학원·강사명, 승인번호, 금액, 결제일 후보를 추출합니다. 원본 이미지와 추출 전문은 서버에 저장하지 않으며, 자동 입력 결과는 반드시 원본과 대조해야 합니다.
+
+```bash
+export GACHI_RECEIPT_OCR_ENABLED=true
+export GACHI_OCR_DAILY_LIMIT=10
+export GACHI_OCR_MONTHLY_LIMIT=500
+```
+
+Cloud Vision API를 사용 설정하고 Cloud Run 서비스 계정에 `Cloud Vision API User` 역할을 부여해야 합니다. 기본 한도는 무료 월간 할당량(1,000 이미지)보다 낮게 잡았으며, 운영 배포에서는 단일 인스턴스와 영속 카운터를 함께 적용하세요.
+
 ## 테스트
 
 ```bash
@@ -87,6 +99,13 @@ pytest
 ## 입시 DB 운영 원칙
 
 `backend/data/admissions.sqlite3`은 처음 실행할 때 가상 데이터를 자동 등록합니다. 실제 데이터를 넣을 때는 반드시 대학 공식 모집요강 또는 대학 입학처가 공시한 전년도 입시결과의 URL, 확인일, 전형별 변경사항을 함께 보관하고 `data_status`를 `verified`로 설정해야 합니다. 검증되지 않은 데이터는 실제 컨설팅 판단에 사용하지 않습니다.
+
+### 교육부·대학 공식 데이터 허브
+
+- `backend/data/official_sources.json`에는 교육부·대교협/대입정보포털·공공데이터포털·서울대학교 등 기준 출처를 등록합니다.
+- `GET /api/official-data/sources`는 출처, 최신 확인일, 검수 상태, 반영 이력을 앱 관리자 화면에서 사용할 수 있도록 반환합니다.
+- 대학 모집요강에서 구조화한 CSV는 `POST /api/admin/official-sources/{source_id}/import-admissions`로 반영합니다. 이 경로는 원문 출처 ID와 반영 이력을 남깁니다.
+- 운영 구조와 검수 기준은 [공식 입시 데이터 운영 문서](docs/official-admission-data-operations.md)에 정리했습니다. PDF/OCR 결과는 검수 전에는 절대 사용자 추천에 쓰지 않습니다.
 
 ## 무료 학원 추천 데이터
 

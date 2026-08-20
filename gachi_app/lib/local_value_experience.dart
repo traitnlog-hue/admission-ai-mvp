@@ -324,6 +324,8 @@ class _ReceiptVerificationPageState extends State<ReceiptVerificationPage> {
   DateTime paidAt = DateTime.now();
   int rating = 4;
   bool submitting = false;
+  bool ocrRunning = false;
+  String? ocrNotice;
 
   int get _reviewLength => review.text.trim().runes.length;
 
@@ -343,15 +345,107 @@ class _ReceiptVerificationPageState extends State<ReceiptVerificationPage> {
     );
     final selected = result?.files.firstOrNull;
     if (selected == null) return;
-    if (selected.size > 10 * 1024 * 1024) {
+    if (selected.size > 5 * 1024 * 1024) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('10MB 이하 이미지로 올려 주세요.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OCR 스캔은 5MB 이하 이미지에서 사용할 수 있어요.')),
+        );
       }
       return;
     }
-    setState(() => proofFile = selected);
+    setState(() {
+      proofFile = selected;
+      ocrNotice = null;
+    });
+    await _scanReceipt();
+  }
+
+  Future<void> _pickProofFromCamera() async {
+    try {
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 88,
+        maxWidth: 2200,
+      );
+      if (image == null) return;
+      final bytes = await image.readAsBytes();
+      if (bytes.length > 5 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('OCR 스캔은 5MB 이하 이미지에서 사용할 수 있어요.')),
+          );
+        }
+        return;
+      }
+      setState(() {
+        proofFile = PlatformFile(
+          name: image.name,
+          size: bytes.length,
+          bytes: bytes,
+        );
+        ocrNotice = null;
+      });
+      await _scanReceipt();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('카메라를 열지 못했어요. 이미지 선택으로 다시 시도해 주세요.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _scanReceipt() async {
+    final selected = proofFile;
+    if (selected?.bytes == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('먼저 영수증 이미지를 선택해 주세요.')));
+      return;
+    }
+    final extension = (selected!.extension ?? '').toLowerCase();
+    final mimeType = switch (extension) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+    setState(() {
+      ocrRunning = true;
+      ocrNotice = null;
+    });
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_authApiBaseUrl/api/receipt-ocr'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'image_base64': base64Encode(selected.bytes!),
+              'mime_type': mimeType,
+            }),
+          )
+          .timeout(const Duration(seconds: 18));
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode != 200) {
+        throw Exception(body['detail']?.toString() ?? '영수증을 읽지 못했습니다.');
+      }
+      final scannedDate = body['paid_at']?.toString();
+      setState(() {
+        if ((body['academy']?.toString() ?? '').isNotEmpty)
+          academy.text = body['academy'].toString();
+        if ((body['receipt_number']?.toString() ?? '').isNotEmpty)
+          receiptNumber.text = body['receipt_number'].toString();
+        if ((body['amount']?.toString() ?? '').isNotEmpty)
+          amount.text = body['amount'].toString();
+        if (scannedDate != null)
+          paidAt = DateTime.tryParse(scannedDate) ?? paidAt;
+        ocrNotice = body['notice']?.toString();
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => ocrNotice = '자동 입력을 완료하지 못했어요. 영수증을 보며 직접 입력해 주세요.');
+      }
+    } finally {
+      if (mounted) setState(() => ocrRunning = false);
+    }
   }
 
   Future<void> _selectDate() async {
@@ -448,6 +542,78 @@ class _ReceiptVerificationPageState extends State<ReceiptVerificationPage> {
                 (value?.trim().length ?? 0) < 2 ? '학원·강사명을 입력해 주세요.' : null,
           ),
           const SizedBox(height: 14),
+          const _FormLabel('영수증 촬영·이미지 선택'),
+          const Text(
+            '사진을 선택하면 영수증 번호·결제 금액·결제일을 바로 읽어 입력해요.',
+            style: TextStyle(color: mute, fontSize: 10, height: 1.45),
+          ),
+          const SizedBox(height: 9),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: ocrRunning ? null : _pickProofFromCamera,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xff153A79),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: const Text('영수증 촬영'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: ocrRunning ? null : _pickProof,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('이미지 선택'),
+                ),
+              ),
+            ],
+          ),
+          if (proofFile != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.check_circle, color: lime, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    ocrRunning
+                        ? '영수증을 읽고 있어요...'
+                        : '${proofFile!.name} 선택됨 · 자동 입력 완료',
+                    style: const TextStyle(color: mute, fontSize: 10),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                TextButton(
+                  onPressed: ocrRunning ? null : _scanReceipt,
+                  child: const Text('다시 읽기'),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 6),
+          const Text(
+            '선택한 사진은 OCR 처리용으로만 전송되며, 원본 이미지는 저장하지 않습니다.',
+            style: TextStyle(color: mute, fontSize: 9, height: 1.45),
+          ),
+          if (ocrNotice != null) ...[
+            const SizedBox(height: 7),
+            Text(
+              ocrNotice!,
+              style: const TextStyle(
+                color: Color(0xff315A9E),
+                fontSize: 10,
+                height: 1.45,
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
           const _FormLabel('영수증 번호'),
           TextFormField(
             controller: receiptNumber,
@@ -475,21 +641,6 @@ class _ReceiptVerificationPageState extends State<ReceiptVerificationPage> {
             label: Text(
               '${paidAt.year}.${paidAt.month.toString().padLeft(2, '0')}.${paidAt.day.toString().padLeft(2, '0')}',
             ),
-          ),
-          const SizedBox(height: 14),
-          const _FormLabel('영수증·성적표 이미지'),
-          OutlinedButton.icon(
-            onPressed: _pickProof,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-            icon: Icon(
-              proofFile == null
-                  ? Icons.add_photo_alternate_outlined
-                  : Icons.check_circle,
-              color: proofFile == null ? mute : lime,
-            ),
-            label: Text(proofFile?.name ?? '이미지 선택'),
           ),
           const SizedBox(height: 17),
           const _FormLabel('실제 수강 후기'),
@@ -533,7 +684,7 @@ class _ReceiptVerificationPageState extends State<ReceiptVerificationPage> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'MVP에서는 이미지·필수값·중복을 기기에서 사전 확인합니다. 운영 버전은 OCR, 결제자 대조, 관리자 검수 후 게시됩니다.',
+            'OCR은 입력 보조 기능입니다. 결제 금액·결제일·영수증 번호를 원본과 대조해 수정하고, 운영 검수 후 게시됩니다.',
             style: TextStyle(color: mute, fontSize: 9, height: 1.5),
           ),
           const SizedBox(height: 15),
@@ -2017,6 +2168,7 @@ class Community extends StatefulWidget {
 class _CommunityState extends State<Community> {
   String category = '전체';
   List<LocalIntelReport> reports = [...demoIntelReports];
+  String? communityDistrict;
 
   @override
   void initState() {
@@ -2025,8 +2177,25 @@ class _CommunityState extends State<Community> {
   }
 
   Future<void> _load() async {
+    final preferences = await SharedPreferences.getInstance();
     final stored = await TrustWallet.loadReports();
-    if (mounted) setState(() => reports = [...stored, ...demoIntelReports]);
+    final profileRaw = preferences.getString('gachi.student.profile');
+    String? district;
+    if (profileRaw != null) {
+      try {
+        final profile = AcademyStudentProfile.fromJson(
+          jsonDecode(profileRaw) as Map<String, dynamic>,
+        );
+        final match = RegExp(r'([가-힣]+구)').firstMatch(profile.region);
+        district = match?.group(1) ?? profile.region.trim();
+      } catch (_) {}
+    }
+    if (mounted) {
+      setState(() {
+        reports = [...stored, ...demoIntelReports];
+        communityDistrict = district?.isNotEmpty == true ? district : null;
+      });
+    }
   }
 
   Future<void> _submitReport() async {
@@ -2077,18 +2246,20 @@ class _CommunityState extends State<Community> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '목동 학원 이야기',
-                    style: TextStyle(
+                  Text(
+                    '${communityDistrict ?? '우리 동네'} 학원 이야기',
+                    style: const TextStyle(
                       color: text,
                       fontSize: 25,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    '우리 동네 학원 정보를 함께 나눠요.',
-                    style: TextStyle(color: mute, fontSize: 11),
+                  Text(
+                    communityDistrict == null
+                        ? '학생 정보를 등록하면 우리 동네 이야기로 설정돼요.'
+                        : '$communityDistrict 학원 정보를 함께 나눠요.',
+                    style: const TextStyle(color: mute, fontSize: 11),
                   ),
                 ],
               ),

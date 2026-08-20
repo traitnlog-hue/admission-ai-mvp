@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -26,6 +27,7 @@ part 'explore_experience.dart';
 part 'level_test_experience.dart';
 part 'local_value_experience.dart';
 part 'admin_experience.dart';
+part 'role_experience.dart';
 
 const navy = Color(0xff101114),
     surface = Color(0xffFFFFFF),
@@ -203,13 +205,31 @@ class Shell extends StatefulWidget {
 
 class _ShellState extends State<Shell> {
   int index = 0;
-  List<Widget> get pages => [
-    Home(
+  bool showConsultantVerification = true;
+
+  Widget get _roleHome {
+    if (widget.user?.needsConsultantVerification == true &&
+        showConsultantVerification) {
+      return ConsultantVerificationPage(
+        user: widget.user!,
+        onDefer: () => setState(() => showConsultantVerification = false),
+      );
+    }
+    return switch (widget.user?.role ?? AppUserRole.student) {
+    AppUserRole.parent => ParentHome(user: widget.user),
+    AppUserRole.consultant => ConsultantHome(user: widget.user),
+    AppUserRole.admin => const AdminDashboardPage(),
+    AppUserRole.student => Home(
       user: widget.user,
       onRequireLogin: widget.onLogout,
       onOpenHome: () => setState(() => index = 0),
       onOpenProfile: () => setState(() => index = 4),
     ),
+    };
+  }
+
+  List<Widget> get pages => [
+    _roleHome,
     Explore(
       user: widget.user,
       onRequireLogin: widget.onLogout,
@@ -865,13 +885,17 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
           const Spacer(),
           TextButton.icon(
             onPressed: () async {
-              final profile = await Navigator.push<AcademyStudentProfile>(
+              final result = await Navigator.push<AcademyMatchFormResult>(
                 c,
                 MaterialPageRoute(
                   builder: (_) => AcademyMatchForm(initial: academyProfile),
                 ),
               );
-              if (profile != null) setState(() => academyProfile = profile);
+              if (result != null) {
+                setState(
+                  () => academyProfile = result.reset ? null : result.profile,
+                );
+              }
             },
             icon: const Icon(Icons.edit_outlined, size: 14),
             label: Text(academyProfile == null ? '학생 정보 입력' : '정보 수정'),
@@ -896,13 +920,17 @@ class _LegacyStudentHomeState extends State<LegacyStudentHome> {
       _StudentProfileCard(
         profile: academyProfile,
         onEdit: () async {
-          final profile = await Navigator.push<AcademyStudentProfile>(
+          final result = await Navigator.push<AcademyMatchFormResult>(
             c,
             MaterialPageRoute(
               builder: (_) => AcademyMatchForm(initial: academyProfile),
             ),
           );
-          if (profile != null) setState(() => academyProfile = profile);
+          if (result != null) {
+            setState(
+              () => academyProfile = result.reset ? null : result.profile,
+            );
+          }
         },
       ),
       const SizedBox(height: 15),
@@ -1056,6 +1084,14 @@ class AcademyStudentProfile {
       );
 }
 
+class AcademyMatchFormResult {
+  final AcademyStudentProfile? profile;
+  final bool reset;
+
+  const AcademyMatchFormResult.saved(this.profile) : reset = false;
+  const AcademyMatchFormResult.reset() : profile = null, reset = true;
+}
+
 class _StudentProfileCard extends StatelessWidget {
   final AcademyStudentProfile? profile;
   final VoidCallback onEdit;
@@ -1165,6 +1201,7 @@ class AcademyMatchForm extends StatefulWidget {
 }
 
 class _AcademyMatchFormState extends State<AcademyMatchForm> {
+  static const _profileKey = 'gachi.student.profile';
   late final TextEditingController name;
   late final TextEditingController school;
   late final TextEditingController academyCondition;
@@ -1172,6 +1209,7 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
   String grade = '고2';
   String level = '개념은 안정적, 심화 보완 필요';
   late Set<String> subjects;
+  bool hasRegisteredProfile = false;
   final regions = const [
     '서울 강남구',
     '서울 서초구',
@@ -1200,6 +1238,34 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
     subjects = {
       ...(p?.subjects ?? ['수학', '학생부·입시']),
     };
+    hasRegisteredProfile = p != null;
+    if (p == null) _restoreSavedProfile();
+  }
+
+  /// 홈에서 전달된 프로필이 없더라도, 이미 등록된 학생 정보가 있으면
+  /// 수정·초기화 화면으로 일관되게 동작하게 합니다.
+  Future<void> _restoreSavedProfile() async {
+    final preferences = await SharedPreferences.getInstance();
+    final rawProfile = preferences.getString(_profileKey);
+    if (rawProfile == null) return;
+    try {
+      final profile = AcademyStudentProfile.fromJson(
+        Map<String, dynamic>.from(jsonDecode(rawProfile) as Map),
+      );
+      if (!mounted) return;
+      setState(() {
+        name.text = profile.name;
+        school.text = profile.school;
+        academyCondition.text = profile.academyCondition;
+        region = profile.region;
+        grade = profile.grade;
+        level = profile.level;
+        subjects = {...profile.subjects};
+        hasRegisteredProfile = true;
+      });
+    } catch (_) {
+      // 손상된 로컬 저장값은 새 학생 정보 입력 화면으로 유지합니다.
+    }
   }
 
   @override
@@ -1229,10 +1295,7 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
       academyCondition: academyCondition.text.trim(),
     );
     final preferences = await SharedPreferences.getInstance();
-    await preferences.setString(
-      'gachi.student.profile',
-      jsonEncode(profile.toJson()),
-    );
+    await preferences.setString(_profileKey, jsonEncode(profile.toJson()));
     List<Map<String, dynamic>> matches = [];
     try {
       final response = await http
@@ -1261,7 +1324,39 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
         builder: (_) => AcademyMatchResult(profile: profile, matches: matches),
       ),
     );
-    if (saved != null && mounted) Navigator.pop(context, saved);
+    if (saved != null && mounted) {
+      Navigator.pop(context, AcademyMatchFormResult.saved(saved));
+    }
+  }
+
+  Future<void> _resetProfile() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('학생 정보를 초기화할까요?'),
+        content: const Text(
+          '이름, 지역, 학교, 학년, 관심 과목과 학원 조건이 모두 삭제됩니다.\n추천 기준도 새로 설정해야 해요.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xff2D3D62),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('초기화'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_profileKey);
+    if (mounted) Navigator.pop(context, const AcademyMatchFormResult.reset());
   }
 
   @override
@@ -1273,6 +1368,21 @@ class _AcademyMatchFormState extends State<AcademyMatchForm> {
         '맞춤 학원 찾기',
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
+      actions: [
+        TextButton.icon(
+          onPressed: _resetProfile,
+          icon: const Icon(Icons.restart_alt_rounded, size: 18),
+          label: const Text('초기화'),
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xff4D5C78),
+            textStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+      ],
     ),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -2665,10 +2775,7 @@ class CoachAdmissionResult extends StatelessWidget {
                   onPressed: () => Navigator.push(
                     c,
                     MaterialPageRoute(
-                      builder: (_) => ConsultantMatchingPage(
-                        strategyTitle: data['major'] as String,
-                        grade: data['grade'] as String? ?? '고등학생',
-                      ),
+                      builder: (_) => PremiumAdmissionOffer(freeResult: data),
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -2677,7 +2784,7 @@ class CoachAdmissionResult extends StatelessWidget {
                     minimumSize: const Size.fromHeight(48),
                   ),
                   icon: const Icon(Icons.people_alt_outlined, size: 18),
-                  label: const Text('입시 컨설턴트 매칭 요청'),
+                  label: const Text('유료 컨설턴트 매칭 시작'),
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
@@ -2860,7 +2967,7 @@ class Profile extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (user?.isAdmin == true) ...[
+                    if (user != null && !user!.isGuest) ...[
                       const SizedBox(height: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -2871,9 +2978,9 @@ class Profile extends StatelessWidget {
                           color: const Color(0xffE8F0FF),
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: const Text(
-                          'GACHI 운영자',
-                          style: TextStyle(color: lime, fontSize: 9),
+                        child: Text(
+                          '${user!.role.label} 계정',
+                          style: const TextStyle(color: lime, fontSize: 9),
                         ),
                       ),
                     ],
@@ -2898,6 +3005,14 @@ class Profile extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 22),
+        _ProfileItem(
+          _roleIcon(user?.role ?? AppUserRole.student),
+          '나의 역할과 권한',
+          onTap: () => Navigator.push(
+            c,
+            MaterialPageRoute(builder: (_) => RoleWorkspacePage(user: user)),
+          ),
+        ),
         _ProfileItem(
           Icons.bookmark_outline,
           '저장한 목표 대학',

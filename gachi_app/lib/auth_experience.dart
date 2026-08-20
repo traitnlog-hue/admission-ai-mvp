@@ -1,5 +1,26 @@
 part of 'main.dart';
 
+enum AppUserRole {
+  student,
+  parent,
+  consultant,
+  admin;
+
+  static AppUserRole fromClaim(Object? claim) => switch (claim?.toString()) {
+    'parent' => AppUserRole.parent,
+    'consultant' => AppUserRole.consultant,
+    'admin' => AppUserRole.admin,
+    _ => AppUserRole.student,
+  };
+
+  String get label => switch (this) {
+    AppUserRole.student => '학생',
+    AppUserRole.parent => '학부모',
+    AppUserRole.consultant => '입시 전문가',
+    AppUserRole.admin => '관리자',
+  };
+}
+
 class SessionUser {
   final String name;
   final String email;
@@ -8,7 +29,8 @@ class SessionUser {
   final String? authToken;
   final bool isIdentityVerified;
   final String? identityProvider;
-  final bool isAdmin;
+  final AppUserRole role;
+  final AppUserRole? requestedRole;
 
   const SessionUser({
     required this.name,
@@ -18,8 +40,30 @@ class SessionUser {
     this.authToken,
     this.isIdentityVerified = false,
     this.identityProvider,
-    this.isAdmin = false,
+    this.role = AppUserRole.student,
+    this.requestedRole,
   });
+
+  bool get isAdmin => role == AppUserRole.admin;
+  bool get needsConsultantVerification =>
+      requestedRole == AppUserRole.consultant && role != AppUserRole.consultant;
+}
+
+class AccountRoleResult {
+  final SessionUser user;
+  final bool needsConsultantVerification;
+
+  const AccountRoleResult({
+    required this.user,
+    required this.needsConsultantVerification,
+  });
+}
+
+class AccountRoleException implements Exception {
+  final String message;
+  const AccountRoleException(this.message);
+  @override
+  String toString() => message;
 }
 
 const _googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
@@ -72,6 +116,7 @@ class SupabaseAuthService {
     required String email,
     required String password,
     required String name,
+    required AppUserRole requestedRole,
   }) async {
     if (!isEnabled) {
       throw const EmailAuthException('Supabase Auth 설정이 필요합니다.');
@@ -80,7 +125,10 @@ class SupabaseAuthService {
         ? await Supabase.instance.client.auth.signUp(
             email: email.trim(),
             password: password,
-            data: {'full_name': name.trim()},
+            data: {
+              'full_name': name.trim(),
+              'requested_account_type': requestedRole.name,
+            },
             emailRedirectTo: emailRedirectUrl,
           )
         : await Supabase.instance.client.auth.signInWithPassword(
@@ -95,6 +143,38 @@ class SupabaseAuthService {
       throw const EmailConfirmationRequired();
     }
     return fromUser(signedInUser);
+  }
+
+  /// 서버가 관리하는 app_metadata에만 기본 역할을 반영한다.
+  /// 입시 전문가·관리자 역할은 여기서 절대 부여하지 않는다.
+  static Future<AccountRoleResult> selectAccountRole(
+    AppUserRole requestedRole,
+  ) async {
+    if (!isEnabled) {
+      return AccountRoleResult(
+        user: const SessionUser(name: 'GACHI 사용자', email: ''),
+        needsConsultantVerification: requestedRole == AppUserRole.consultant,
+      );
+    }
+    final result = await Supabase.instance.client.functions.invoke(
+      'select-account-role',
+      body: {'role': requestedRole.name},
+    );
+    if (result.data is Map && (result.data as Map)['error'] != null) {
+      throw AccountRoleException((result.data as Map)['error'].toString());
+    }
+    final response = result.data is Map
+        ? Map<String, dynamic>.from(result.data as Map)
+        : const <String, dynamic>{};
+    final refreshed = await Supabase.instance.client.auth.refreshSession();
+    final next = refreshed.user ?? Supabase.instance.client.auth.currentUser;
+    if (next == null) {
+      throw const AccountRoleException('역할 변경 후 세션을 확인하지 못했습니다.');
+    }
+    return AccountRoleResult(
+      user: fromUser(next),
+      needsConsultantVerification: response['status'] == 'verification_required',
+    );
   }
 
   static Future<void> logout() async {
@@ -136,7 +216,14 @@ class SupabaseAuthService {
           : 'GACHI 학생',
       email: email,
       authProvider: 'supabase',
-      isAdmin: user.appMetadata['gachi_role'] == 'admin',
+      role: AppUserRole.fromClaim(user.appMetadata['gachi_role']),
+      requestedRole: switch (user.userMetadata?['requested_account_type']
+          ?.toString()) {
+        'parent' => AppUserRole.parent,
+        'consultant' => AppUserRole.consultant,
+        'admin' => AppUserRole.admin,
+        _ => AppUserRole.student,
+      },
     );
   }
 }
@@ -278,6 +365,7 @@ class _AuthGateState extends State<AuthGate> {
   static const _providerKey = 'gachi.auth.provider';
   static const _tokenKey = 'gachi.auth.token';
   static const _identityVerifiedKey = 'gachi.auth.identity_verified';
+  static const _pendingRoleKey = 'gachi.auth.pending_role';
 
   bool loading = true;
   SessionUser? user;
@@ -296,8 +384,24 @@ class _AuthGateState extends State<AuthGate> {
         .listen((state) async {
           final signedInUser = state.session?.user;
           if (signedInUser != null) {
+            var sessionUser = SupabaseAuthService.fromUser(signedInUser);
+            try {
+              final preferences = await SharedPreferences.getInstance();
+              final roleName = preferences.getString(_pendingRoleKey);
+              await preferences.remove(_pendingRoleKey);
+              if (roleName != null) {
+                final selected = AppUserRole.values
+                    .where((role) => role.name == roleName)
+                    .firstOrNull;
+                if (selected != null) {
+                  sessionUser = (await SupabaseAuthService.selectAccountRole(selected)).user;
+                }
+              }
+            } catch (_) {
+              // OAuth 콜백에서 역할 동기화가 늦어져도 현재 계정 세션은 유지한다.
+            }
             await _authenticate(
-              SupabaseAuthService.fromUser(signedInUser),
+              sessionUser,
               persist: false,
             );
           } else if (state.event == AuthChangeEvent.signedOut && mounted) {
@@ -422,6 +526,7 @@ class _LoginPageState extends State<LoginPage> {
   bool createAccount = false;
   bool submitting = false;
   bool obscurePassword = true;
+  AppUserRole selectedRole = AppUserRole.student;
   String? errorMessage;
   String? confirmationMessage;
 
@@ -440,6 +545,8 @@ class _LoginPageState extends State<LoginPage> {
       confirmationMessage = null;
     });
     try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString(_AuthGateState._pendingRoleKey, selectedRole.name);
       await SupabaseAuthService.signInWithGoogle();
     } on AuthException catch (error) {
       if (mounted) setState(() => errorMessage = _authErrorMessage(error));
@@ -478,12 +585,13 @@ class _LoginPageState extends State<LoginPage> {
       confirmationMessage = null;
     });
     try {
-      final user = SupabaseAuthService.isEnabled
+      var user = SupabaseAuthService.isEnabled
           ? await SupabaseAuthService.authenticate(
               createAccount: createAccount,
               email: email,
               password: password,
               name: name,
+              requestedRole: selectedRole,
             )
           : await EmailAuthService.authenticate(
               createAccount: createAccount,
@@ -491,6 +599,13 @@ class _LoginPageState extends State<LoginPage> {
               password: password,
               name: name,
             );
+      if (SupabaseAuthService.isEnabled) {
+        final roleResult = await SupabaseAuthService.selectAccountRole(selectedRole);
+        user = roleResult.user;
+        if (roleResult.needsConsultantVerification && mounted) {
+          confirmationMessage = '입시 전문가 활동을 위해 경력 증명서·자격증 등 입증 자료를 제출해 주세요. 관리자 승인 전에는 전문가 권한이 부여되지 않습니다.';
+        }
+      }
       await widget.onAuthenticated(user, persist: true);
     } on EmailConfirmationRequired {
       if (mounted) {
@@ -501,6 +616,8 @@ class _LoginPageState extends State<LoginPage> {
       }
     } on AuthException catch (error) {
       if (mounted) setState(() => errorMessage = _authErrorMessage(error));
+    } on AccountRoleException catch (error) {
+      if (mounted) setState(() => errorMessage = error.message);
     } on EmailAuthException catch (error) {
       if (mounted) setState(() => errorMessage = error.message);
     } catch (_) {
@@ -609,20 +726,32 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const _Logo(),
-                const SizedBox(height: 34),
+                const SizedBox(height: 38),
                 const Text(
-                  '다시 만나서\n반가워요.',
+                  '같이 + 가치',
                   style: TextStyle(
-                    color: text,
-                    fontSize: 31,
-                    height: 1.15,
+                    color: lime,
+                    fontSize: 13,
+                    height: 1.2,
                     fontWeight: FontWeight.w600,
+                    letterSpacing: .2,
                   ),
                 ),
-                const SizedBox(height: 9),
+                const SizedBox(height: 10),
                 const Text(
-                  '계정 하나로 진단 결과와 목표 플랜을 안전하게 이어서 관리하세요.',
-                  style: TextStyle(color: mute, fontSize: 12, height: 1.5),
+                  '같이 배우고,\n가치를 키우다',
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 32,
+                    height: 1.18,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -1.25,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '학생의 배움과 선택이 더 큰 가치로 이어지도록 함께합니다.',
+                  style: TextStyle(color: mute, fontSize: 12, height: 1.55),
                 ),
                 if (SupabaseAuthService.isEnabled) ...[
                   const SizedBox(height: 8),
@@ -664,6 +793,31 @@ class _LoginPageState extends State<LoginPage> {
                           confirmationMessage = null;
                         }),
                 ),
+                const SizedBox(height: 16),
+                _RoleSelector(
+                  title: createAccount ? '가입 유형을 선택해 주세요' : '로그인할 역할을 선택해 주세요',
+                  roles: createAccount
+                      ? const [
+                          AppUserRole.student,
+                          AppUserRole.parent,
+                          AppUserRole.consultant,
+                        ]
+                      : AppUserRole.values,
+                  selected: selectedRole,
+                  onSelected: submitting
+                      ? null
+                      : (role) => setState(() {
+                          selectedRole = role;
+                          errorMessage = null;
+                        }),
+                ),
+                if (selectedRole == AppUserRole.consultant) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    '학원 관계자·강사·컨설턴트를 포함합니다. 가입 후 경력 증명서·자격증·입증 자료를 제출하면 관리자 검토를 거쳐 전문가 권한이 활성화됩니다.',
+                    style: TextStyle(color: mute, fontSize: 10, height: 1.5),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 if (createAccount) ...[
                   TextField(
@@ -803,6 +957,293 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+      ),
+    ),
+  );
+}
+
+class _RoleSelector extends StatelessWidget {
+  final String title;
+  final List<AppUserRole> roles;
+  final AppUserRole selected;
+  final ValueChanged<AppUserRole>? onSelected;
+
+  const _RoleSelector({
+    required this.title,
+    required this.roles,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: roles
+            .map(
+              (role) => ChoiceChip(
+                label: Text(role.label),
+                selected: selected == role,
+                onSelected: onSelected == null ? null : (_) => onSelected!(role),
+                showCheckmark: false,
+                selectedColor: lavender,
+                side: BorderSide(color: selected == role ? lime : const Color(0xffD9DEE8)),
+                labelStyle: TextStyle(
+                  color: selected == role ? lime : text,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    ],
+  );
+}
+
+class ConsultantVerificationPage extends StatefulWidget {
+  final SessionUser user;
+  final VoidCallback onDefer;
+
+  const ConsultantVerificationPage({
+    super.key,
+    required this.user,
+    required this.onDefer,
+  });
+
+  @override
+  State<ConsultantVerificationPage> createState() =>
+      _ConsultantVerificationPageState();
+}
+
+class _ConsultantVerificationPageState
+    extends State<ConsultantVerificationPage> {
+  final careerController = TextEditingController();
+  String consultantType = 'admission_consultant';
+  List<PlatformFile> files = [];
+  bool submitting = false;
+  bool completed = false;
+  String? error;
+
+  @override
+  void dispose() {
+    careerController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFiles() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+      allowMultiple: true,
+      withData: true,
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      files = result.files.take(5).toList();
+      error = null;
+    });
+  }
+
+  String _contentType(String name) {
+    final ext = name.split('.').last.toLowerCase();
+    return switch (ext) {
+      'pdf' => 'application/pdf',
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+  }
+
+  String _safeFileName(String name) => name
+      .replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_')
+      .replaceAll(RegExp(r'_+'), '_');
+
+  Future<void> _submit() async {
+    if (files.isEmpty) {
+      setState(() => error = '경력 증명서, 자격증 또는 활동 입증 자료를 1개 이상 첨부해 주세요.');
+      return;
+    }
+    final authUser = Supabase.instance.client.auth.currentUser;
+    if (authUser == null) {
+      setState(() => error = '세션을 확인하지 못했습니다. 다시 로그인해 주세요.');
+      return;
+    }
+    if (files.any((file) => file.bytes == null)) {
+      setState(() => error = '첨부 파일을 읽지 못했습니다. 다시 선택해 주세요.');
+      return;
+    }
+    setState(() {
+      submitting = true;
+      error = null;
+    });
+    try {
+      final paths = <String>[];
+      for (final file in files) {
+        final path = '${authUser.id}/${DateTime.now().microsecondsSinceEpoch}_${_safeFileName(file.name)}';
+        final uploaded = await Supabase.instance.client.storage
+            .from('consultant-verification')
+            .uploadBinary(
+              path,
+              file.bytes!,
+              fileOptions: FileOptions(
+                contentType: _contentType(file.name),
+                upsert: false,
+              ),
+            );
+        paths.add(uploaded);
+      }
+      await Supabase.instance.client
+          .from('consultant_verification_submissions')
+          .insert({
+            'user_id': authUser.id,
+            'consultant_type': consultantType,
+            'career_summary': careerController.text.trim().isEmpty
+                ? null
+                : careerController.text.trim(),
+            'evidence_paths': paths,
+          });
+      if (mounted) setState(() => completed = true);
+    } on StorageException catch (exception) {
+      if (mounted) setState(() => error = '파일을 저장하지 못했습니다. ${exception.message}');
+    } on PostgrestException catch (exception) {
+      if (mounted) setState(() => error = '검증 신청을 저장하지 못했습니다. ${exception.message}');
+    } catch (_) {
+      if (mounted) setState(() => error = '제출 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      if (mounted) setState(() => submitting = false);
+    }
+  }
+
+  String get _typeLabel => switch (consultantType) {
+    'academy_staff' => '학원 관계자',
+    'instructor' => '강사',
+    _ => '입시 전문가',
+  };
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: mist,
+    appBar: AppBar(
+      backgroundColor: mist,
+      surfaceTintColor: Colors.transparent,
+      leading: IconButton(
+        onPressed: widget.onDefer,
+        icon: const Icon(Icons.arrow_back_rounded),
+      ),
+      title: const Text('입시 전문가 등록'),
+      centerTitle: true,
+    ),
+    body: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(24, 22, 24, 40),
+        children: [
+          const Text(
+            '입증 자료를 제출해 주세요.',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, letterSpacing: -1.2),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '입시 전문가(학원 관계자·강사·컨설턴트)는 경력 증명서, 자격증 또는 활동 입증 자료를 제출하면 관리자 검토 후 활동 권한이 활성화됩니다.',
+            style: TextStyle(color: mute, fontSize: 13, height: 1.6),
+          ),
+          const SizedBox(height: 22),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: lavender,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.lock_outline_rounded, color: lime),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '제출 자료는 공개되지 않습니다. 본인과 관리자만 열람할 수 있으며, 검토 목적 외에는 사용하지 않습니다.',
+                    style: TextStyle(color: Color(0xff35517D), fontSize: 11, height: 1.55),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text('등록 유형', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: consultantType,
+            items: const [
+              DropdownMenuItem(value: 'admission_consultant', child: Text('입시 컨설턴트')),
+              DropdownMenuItem(value: 'academy_staff', child: Text('학원 관계자')),
+              DropdownMenuItem(value: 'instructor', child: Text('강사')),
+            ],
+            onChanged: completed ? null : (value) => setState(() => consultantType = value!),
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 20),
+          const Text('경력·전문 분야 소개 (선택)', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: careerController,
+            enabled: !completed,
+            maxLines: 4,
+            maxLength: 500,
+            decoration: const InputDecoration(
+              hintText: '예: 학생부 종합전형 컨설팅 5년, 고3 수시 지원 전략 전문',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text('입증 자료', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          const Text('PDF, JPG, PNG, WEBP · 최대 5개 · 파일당 10MB', style: TextStyle(color: mute, fontSize: 11)),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: completed || submitting ? null : _pickFiles,
+            icon: const Icon(Icons.upload_file_outlined),
+            label: const Text('경력 증명서·자격증·입증 자료 첨부'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+          ),
+          if (files.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...files.map((file) => Container(
+              margin: const EdgeInsets.only(bottom: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(12)),
+              child: Row(children: [
+                const Icon(Icons.description_outlined, color: lime, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(file.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11))),
+                Text('${(file.size / 1024 / 1024).toStringAsFixed(1)}MB', style: const TextStyle(color: mute, fontSize: 10)),
+              ]),
+            )),
+          ],
+          if (error != null) ...[
+            const SizedBox(height: 12),
+            Text(error!, style: const TextStyle(color: Color(0xffA53C24), fontSize: 11, height: 1.5)),
+          ],
+          if (completed) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: const Color(0xffEAF7F0), borderRadius: BorderRadius.circular(14)),
+              child: Text('$_typeLabel 등록 자료를 제출했어요. 관리자 검토가 완료되면 입시 전문가 화면이 활성화됩니다.', style: const TextStyle(color: Color(0xff176B47), fontSize: 12, height: 1.5)),
+            ),
+          ],
+          const SizedBox(height: 22),
+          FilledButton(
+            onPressed: completed || submitting ? null : _submit,
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
+            child: Text(submitting ? '제출 중...' : completed ? '검토 대기 중' : '검토 신청하기'),
+          ),
+          TextButton(onPressed: completed ? widget.onDefer : (submitting ? null : widget.onDefer), child: const Text('나중에 제출할게요')),
+        ],
       ),
     ),
   );
