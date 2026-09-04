@@ -1,0 +1,390 @@
+{
+  "document_type": "project_handoff_context",
+  "document_language": "ko-KR",
+  "generated_at": "2026-08-27",
+  "project": {
+    "name": "GACHI",
+    "repository": "https://github.com/traitnlog-hue/admission-ai-mvp",
+    "branch": "main",
+    "latest_known_commit": "b5f8705 feat: expand GACHI roles and admissions workflow",
+    "product_stage": "UX/UI 중심의 기능형 MVP",
+    "one_line_definition": "공식 입시 정보, 학생 맥락, 검증 가능한 지역 교육 경험, 전문가 상담을 연결해 학부모와 학생의 교육 의사결정을 돕는 앱",
+    "brand_meaning": "GACHI는 '같이'와 '가치'의 의미를 결합한 이름이며, 함께 배우고 더 큰 가치를 만들어 간다는 메시지를 지향한다.",
+    "primary_language": "한국어",
+    "primary_market": "대한민국 중·고등학생 및 학부모의 진학·학원·학습 의사결정"
+  },
+  "handoff_instruction_for_claude": {
+    "goal": "이 JSON을 프로젝트 현황의 기준 문서로 사용하되, 실제 코드와 충돌하면 코드와 환경변수 상태를 우선 확인한다.",
+    "implementation_principles": [
+      "합격 가능성, 합격선, 특정 대학 합격 여부를 AI가 단정하거나 추정하지 않는다.",
+      "모집요강·전형·모집인원 등 입시 수치는 정부·대교협·대학 입학처 공식 원문과 검수 이력 없이는 verified 상태로 공개하지 않는다.",
+      "학생부·성적표·영수증 등 민감 자료는 최소 수집하고, 원문을 공개 데이터 파이프라인이나 클라이언트 저장소에 넣지 않는다.",
+      "클라이언트에 service_role, Supabase secret, Toss secret, Google 서비스 계정 키를 넣지 않는다.",
+      "현재는 MVP 데모와 실제 외부 연동 준비 코드가 섞여 있으므로, 외부 서비스 연결 전에는 화면 문구를 실제 운영 기능처럼 과장하지 않는다."
+    ],
+    "user_preference": "사용자는 웹·앱 UX/UI 디자이너이자 개발자이다. 답변은 한국어로, 디자인 판단과 구현 상태를 명확히 구분해 간결하게 작성한다. 모르는 사실은 추측하지 않고 '모른다' 또는 '없다'라고 답한다."
+  },
+  "problem_and_insight": {
+    "primary_persona": {
+      "name": "정보를 조율하는 학부모",
+      "demographic": "10대 자녀를 둔 40~50대 여성 학부모를 핵심으로 상정하되, 성별에 제한되지 않는 보호자 사용자",
+      "behaviors": [
+        "교육과 입시에 관심이 높고 정보를 능동적으로 탐색한다.",
+        "지인 학부모의 경험담을 수집·공유하지만, 정보의 신뢰도와 우리 아이 적합성을 판단하기 어렵다.",
+        "매년 변하는 교육 정책과 전형에 관심은 있으나 복잡한 규정을 행동 계획으로 해석하기 어렵다."
+      ],
+      "core_need": "더 많은 정보를 원하는 것이 아니라, 우리 아이 맥락에서 믿고 다음 행동을 결정할 근거를 원한다."
+    },
+    "secondary_personas": [
+      "학생: 목표를 이해하고 주간 학습 계획을 실행·기록하려는 사용자",
+      "입시 전문가: 입시 컨설턴트, 학원 관계자, 강사를 포괄하며 증빙과 승인 후 상담·서비스를 제공하는 사용자",
+      "관리자: 공식 데이터, 전문가 증빙, 지역 제보, 매칭 운영을 검수·관리하는 사용자"
+    ],
+    "core_product_insights": [
+      "학부모가 구매하는 것은 싼 정보가 아니라 '이 선택을 믿어도 되는가'에 대한 확신이다.",
+      "공식 정보만으로는 행동하기 어렵고, 로컬 경험만으로는 신뢰하기 어렵다. 두 정보를 학생 맥락과 함께 연결해야 한다.",
+      "커뮤니티의 가치는 게시글 수가 아니라 영수증 증빙, 운영 검수, 작성자 익명성, 출처 표기에 있다.",
+      "AI의 역할은 합격 예측이 아니라 공식 정보와 학생 입력을 이해 가능한 준비 행동으로 구조화하는 것이다.",
+      "전문가 매칭의 품질은 추천 알고리즘만이 아니라, 상담 전 학생 정보와 학습 성향을 충분히 정리하는 과정에서 높아진다."
+    ],
+    "portfolio_assets": [
+      {
+        "concept": "A. Decision Lens",
+        "path": "portfolio/assets/gachi-product-insight-decision-lens-v1.png",
+        "message": "정보는 많지만, 결정은 어렵다. GACHI는 정보의 양이 아닌 결정의 근거를 설계한다."
+      },
+      {
+        "concept": "B. Trust Architecture",
+        "path": "portfolio/assets/gachi-trust-architecture-v1.png",
+        "message": "공식 입시 데이터, 검증된 지역 경험, 학생 학습 맥락이 결합되어 의사결정 신뢰를 만든다."
+      },
+      {
+        "concept": "C. Family Journey",
+        "path": "portfolio/assets/gachi-user-insight-family-journey-v1.png",
+        "message": "학생·학부모·전문가의 관점을 연결하여 교육 의사결정 여정을 돕는다."
+      }
+    ]
+  },
+  "technology": {
+    "client": {
+      "framework": "Flutter",
+      "app_path": "gachi_app",
+      "supported_targets": ["Web", "Android", "iOS", "macOS", "Windows", "Linux"],
+      "main_libraries": [
+        "supabase_flutter 2.17.2",
+        "google_sign_in 7.2.0",
+        "in_app_purchase 3.3.0",
+        "shared_preferences 2.5.5",
+        "http 1.2.2",
+        "image_picker 1.1.2",
+        "file_picker 11.0.3",
+        "url_launcher 6.3.2"
+      ],
+      "design_system": "Paperlogy 폰트, 밝은 블루·화이트 기반의 카드형 모바일 우선 UI, GACHI 워드마크 자산 사용"
+    },
+    "server": {
+      "framework": "FastAPI",
+      "path": "backend/app",
+      "database": "SQLite 기반 MVP 입시 데이터베이스 (backend/data/admissions.sqlite3)",
+      "static_frontend": "frontend",
+      "test_framework": "pytest"
+    },
+    "authentication_and_operations": {
+      "service": "Supabase Auth, Supabase Edge Functions, Supabase Storage, Supabase Postgres/RLS",
+      "paths": [
+        "gachi_app/lib/auth_experience.dart",
+        "gachi_app/lib/role_experience.dart",
+        "gachi_app/lib/admin_experience.dart",
+        "gachi_app/supabase/functions/select-account-role/index.ts",
+        "gachi_app/supabase/functions/manage-roles/index.ts",
+        "gachi_app/supabase/migrations/202608200001_add_consultant_verification_submissions.sql"
+      ]
+    },
+    "optional_cloud_integrations": [
+      "Google Cloud Vertex AI Gemini: 제한형 입시 코칭 문장 생성",
+      "Google Cloud Vision: 영수증 OCR 자동 입력 보조",
+      "Toss Payments: 웹 결제 주문 준비와 서버 승인 검증",
+      "Google Play Billing / Apple StoreKit: 모바일 인앱결제 준비 코드"
+    ]
+  },
+  "information_architecture": {
+    "global_navigation": ["홈", "탐색", "커뮤니티", "코치", "MY"],
+    "role_based_home": {
+      "student": "학습 진단, 주간 자기주도 플랜, 목표와 맞춤 학원·입시 기능 중심",
+      "parent": "자녀 학습 현황·검증된 정보·상담과 의사결정 관리 중심",
+      "consultant": "배정 학생, 상담 일정·노트, 전문가 검증 상태 중심",
+      "admin": "운영 이슈, 전문가 승인, 커뮤니티·매칭 검수 중심"
+    },
+    "primary_flows": [
+      "인트로 → 로그인/회원가입 또는 체험 모드 → 역할별 홈",
+      "학생 정보 등록 → 맞춤 학원 탐색/지역 세부 동네 선택 → 결과·카카오맵 검색 연결",
+      "무료 진단 → 결과 → COACH+ 유료 상담 흐름",
+      "매칭 전 학생 정보 확인 → 매칭 상담 결제 → 추천 전문가 선택 → MVP 채팅 상담 → 맞춤 컨설팅 프로그램 선택·결제",
+      "영수증 촬영/선택 → OCR 입력 보조 → 수강 후기 작성·글자 수 확인 → 운영 검수 → 포인트/티켓 안내",
+      "지역 기반 커뮤니티 → 익명 작성자 제보 → 영수증 증빙·운영 검수"
+    ]
+  },
+  "implemented_features": {
+    "branding_and_intro": [
+      "GACHI 로고 및 투명 배경 로고 자산 적용",
+      "약 0.9초 후 사라지는 인트로 애니메이션",
+      "상단 GACHI 로고 클릭 시 홈으로 이동",
+      "하단 네비게이션 소프트 라인 스타일 적용"
+    ],
+    "authentication_and_roles": [
+      "Supabase 이메일 회원가입·로그인·비밀번호 재설정 UI 및 연동 코드",
+      "Supabase Google OAuth 흐름 코드",
+      "로그인·회원가입 시 학생, 학부모, 입시 전문가, 관리자 역할 선택 UI",
+      "입시 전문가는 학원 관계자·강사·컨설턴트를 포함하는 라벨로 통합",
+      "전문가 계정은 경력 요약과 PDF/JPG/PNG/WEBP 증빙자료 1~5개를 비공개 Storage에 올리고 관리자 검수를 받는 구조",
+      "관리자만 역할을 변경하는 Edge Function과 RLS 기반 관리자 UI",
+      "체험 모드와 로그인 사용자 모드를 분리"
+    ],
+    "student_and_parent_tools": [
+      "학생 정보 등록: 이름, 지역, 학교, 학년, 관심 과목, 학습 수준, 학원 조건",
+      "학생 정보 SharedPreferences 저장 및 재진입 복원",
+      "등록 정보 초기화 버튼과 확인 다이얼로그",
+      "무료 레벨 진단, 입시 전략 진단, 목표 추가",
+      "이번 주 자기주도 플랜: 완료율, 요일별 진행, 체크리스트, 회고 입력 및 저장",
+      "미완료 플랜 알림 설정 UI와 앱 내 알림 센터/리마인드 로직",
+      "AI 코치 대화 화면",
+      "홈 하단 예시 광고 영역"
+    ],
+    "academy_and_community": [
+      "학생 등록 지역을 기반으로 한 맞춤 학원 탐색",
+      "예: 서울 강남구 등록 시 강남구 세부 동네를 선택하는 UI",
+      "지역·학년·과목·학습 수준 기반 무료 공공데이터 CSV 추천 API",
+      "카카오맵 앱 키 없이 공식 검색 URL로 위치 검색 연결",
+      "지역 기반 커뮤니티 제목: 등록 지역을 반영한 '~구 학원 이야기'",
+      "제보 작성자 익명 처리, 학원/강사명은 운영 검수용 수집",
+      "제보 유형: 핫딜, 비용, 마감, 수업, 그 외",
+      "작성 예시·개인정보 입력 금지 안내·운영 검수 안내",
+      "영수증 증빙 중심의 후기·제보 흐름"
+    ],
+    "receipt_and_trust": [
+      "학원/강사명 바로 아래에 영수증 촬영·이미지 선택 UI 배치",
+      "영수증 OCR 결과를 학원/강사명, 영수증 번호, 결제 금액, 결제일 필드에 자동 반영하는 클라이언트 코드",
+      "후기 20자 이상 조건과 실시간 글자 수 표시",
+      "영수증 인증 보상, 티켓 애니메이션, 500P/티켓 사용 안내 UI",
+      "OCR 원본과 전문은 서버에 저장하지 않는 설계"
+    ],
+    "admission_and_consulting": [
+      "규칙 기반 무료 입시 전략 진단 API와 결과 화면",
+      "공식 출처, 확인일, 검수 상태를 가진 입시 데이터 모델",
+      "2027·2028 입시 연도 데이터 구조",
+      "유료 컨설팅 프로그램 카드, 학년별 필터, 회당 시간·총 횟수·가격·상세 보기",
+      "중1~중3부터 고3·정시까지 시기별 프로그램 카탈로그",
+      "매칭 전 정보 확인: 학생부 핵심 요약, 학습 성향, 목표·성적·지원 희망 등 차트형/서술형 입력 구조",
+      "컨설턴트 매칭 상담 9,900원, 1건당 최대 3명의 전문가와 상담 가능하도록 로컬 패스 제한",
+      "추천 전문가 3명 카드와 전체 전문가 더보기 화면",
+      "결제 → 전문가 선택 → MVP 채팅 상담 → 프로그램 선택·최종 결제의 3단계 UX",
+      "전문가와의 채팅은 현재 기기 로컬 저장 기반 MVP이며 실제 전문가에게 메시지를 보내지 않는다"
+    ],
+    "admin_and_data_governance": [
+      "관리자 운영 대시보드: 전문가 매칭, 증빙, 운영 이슈 처리 UI",
+      "공식 입시 데이터 출처 레지스트리와 검수 운영 문서",
+      "관리자 토큰으로 검수 완료 CSV만 전형 데이터로 가져오는 API",
+      "교육부, 대입정보포털 어디가, 공공데이터포털/대교협, 서울대, 고려대, 연세대 기준 출처 구조",
+      "검수 전 PDF/OCR 결과를 추천에 사용하지 않는 운영 원칙"
+    ]
+  },
+  "api_contracts": {
+    "health_and_auth": [
+      "GET /api/health",
+      "POST /api/auth/register",
+      "POST /api/auth/login",
+      "GET /api/auth/me",
+      "POST /api/auth/logout",
+      "POST /api/identity/start"
+    ],
+    "admission_data": [
+      "GET /api/admissions/{year}",
+      "GET /api/official-data/sources",
+      "POST /api/admin/import-admissions",
+      "POST /api/admin/official-sources/{source_id}/import-admissions",
+      "POST /api/analyze",
+      "POST /api/ai-admission-analysis"
+    ],
+    "local_and_commerce": [
+      "POST /api/academy-recommendations",
+      "POST /api/receipt-ocr",
+      "POST /api/payments/prepare",
+      "POST /api/payments/confirm"
+    ],
+    "important_notes": [
+      "관리자 입시 데이터 가져오기 API는 ADMIN_API_TOKEN이 필요하다.",
+      "AI 입시 분석은 Authorization Bearer 토큰이 필요하다.",
+      "결제 주문은 서버 카탈로그에서 금액을 재계산하고 10분 만료 서명 토큰을 만든다."
+    ]
+  },
+  "data_and_sources": {
+    "current_data_files": [
+      "backend/data/admissions.sqlite3",
+      "backend/data/admissions.official.json",
+      "backend/data/admissions.template.csv",
+      "backend/data/official_sources.json",
+      "backend/data/rules/2027.json",
+      "backend/data/rules/2028.json",
+      "backend/data/academies.free.csv",
+      "backend/data/academies.free.template.csv",
+      "backend/data/universities.sample.json"
+    ],
+    "official_data_policy": {
+      "allowed_sources": ["교육부", "대교협/대입정보포털 어디가", "공공데이터포털", "대학 입학처 원문"],
+      "release_rule": "모집단위×전형 단위 데이터가 원문 URL, 확인일, 검수 이력과 함께 verified 상태일 때만 실제 컨설팅 판단에 사용할 수 있다.",
+      "review_process": [
+        "공식 모집요강·정정 공지 확인",
+        "원문 URL·발행일·확인일·해시 기록",
+        "구조화 CSV 작성",
+        "관리자 2인 대조",
+        "관리자 API로 반영",
+        "사용자 화면에 출처·확인일·상태 노출"
+      ]
+    },
+    "provided_reference_documents": [
+      "2027학년도 대학 신입학생 입학전형 안내.pdf",
+      "2027학년도 고려대학교 서울캠퍼스 후기모집 요강.pdf",
+      "연세대 2027 후기 입시 요강.pdf"
+    ]
+  },
+  "integration_status": {
+    "already_in_code": [
+      {
+        "integration": "Supabase Auth / 역할 / 전문가 증빙",
+        "status": "코드 및 DB 마이그레이션 준비됨",
+        "required_configuration": ["SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "Email provider", "Google provider", "Redirect URLs", "Edge Functions 배포", "DB migration 적용"]
+      },
+      {
+        "integration": "Google OAuth",
+        "status": "코드 준비됨",
+        "required_configuration": ["Google Cloud Web OAuth Client ID", "승인된 JavaScript 원본", "Supabase Google provider 설정", "Android/iOS 플랫폼별 OAuth 설정"]
+      },
+      {
+        "integration": "Google Cloud Vertex AI",
+        "status": "서버 호출 코드 준비됨, 기본 비활성",
+        "required_configuration": ["GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GACHI_AI_ANALYSIS_ENABLED=true", "Vertex AI API 활성화", "Cloud Run 서비스 계정 최소 권한", "예산 알림과 일일 한도"]
+      },
+      {
+        "integration": "Google Cloud Vision OCR",
+        "status": "서버 OCR·클라이언트 자동 입력 코드 준비됨, 기본 비활성",
+        "required_configuration": ["GACHI_RECEIPT_OCR_ENABLED=true", "Cloud Vision API 활성화", "서비스 계정 Cloud Vision API User 권한", "일/월 사용량 제한"]
+      },
+      {
+        "integration": "Toss Payments",
+        "status": "서버 주문 준비·서명·승인 코드 준비됨",
+        "required_configuration": ["TOSS_PAYMENTS_SECRET_KEY 또는 TOSS_ORDER_SIGNING_SECRET", "토스 테스트/운영 키", "결제 성공/실패 리다이렉트 및 웹훅 처리", "서버 측 권한 지급 저장소"]
+      },
+      {
+        "integration": "Google Play / Apple App Store 결제",
+        "status": "in_app_purchase 기반 클라이언트 준비됨",
+        "required_configuration": ["각 스토어 콘솔의 상품 등록", "동일 product ID", "Google Play Developer API 또는 App Store Server API 영수증 검증 서버", "PURCHASE_VERIFICATION_URL"]
+      }
+    ],
+    "not_implemented_or_not_confirmed": [
+      "Firebase Cloud Messaging의 실제 푸시 발송과 백그라운드 스케줄링은 연결·검증되지 않았다. 현재는 앱 내 미완료 플랜 알림 UI/로직이다.",
+      "PASS/NICE/KCB 실명인증은 계약한 사업자 URL과 서버 콜백 검증이 필요하며, 실제 사업자 연동은 완료 여부를 확인할 수 없다.",
+      "실제 카카오맵 지도 SDK 삽입은 없다. 현재는 카카오맵 검색 URL로 이동한다.",
+      "실제 전문가 라이브 채팅, 상담 가능 시간 예약, 전문가 전체 데이터베이스는 구현되지 않았다. 현재 전문가 데이터와 채팅은 MVP 데모·로컬 저장이다.",
+      "실제 결제 승인 후 주문·상담권·프로그램 권한을 영속 저장하는 운영 백엔드는 완료 여부를 확인할 수 없다.",
+      "공식 입시 데이터의 자동 수집, Cloud Scheduler, Cloud Storage, Cloud SQL, 관리자 2인 검수 운영은 설계 문서와 일부 API만 있으며 운영 배포 여부는 확인할 수 없다.",
+      "외부 Supabase, Google Cloud, Toss, App Store, Google Play 콘솔에 어떤 설정·비용·권한이 실제로 적용됐는지는 이 저장소만으로는 모른다."
+    ]
+  },
+  "security_and_privacy": {
+    "rules": [
+      "입시 전문가 증빙 파일은 private Supabase Storage 버킷에 보관하고 신청자 본인과 관리자만 RLS로 조회한다.",
+      "전문가 역할과 관리자 역할은 사용자가 임의로 부여받지 않도록 Edge Function에서 제한한다.",
+      "실명인증에 주민등록번호나 신분증 원본을 앱이 직접 저장하지 않는다.",
+      "영수증 OCR 이미지는 API 호출에만 사용하고 서버 저장을 하지 않는 설계다.",
+      "커뮤니티 작성자는 공개적으로 익명이며, 연락처·학교·학생 이름을 입력하지 않도록 안내한다.",
+      "결제 금액은 클라이언트를 신뢰하지 않고 서버 카탈로그 기준으로 재계산한다.",
+      "AI는 개인화 코칭 보조이며 합격 예측·합격선 제공을 금지한다."
+    ],
+    "required_before_production": [
+      "HTTPS, 서버 비밀값 관리, 로그 마스킹, 데이터 보존·삭제 정책 수립",
+      "개인정보처리방침·이용약관·전자상거래 환불 정책·전문가 서비스 약관 검토",
+      "미성년자 정보·학생부·성적표 수집 범위와 법적 근거 검토",
+      "결제 웹훅 멱등성, 환불·취소, 권한 회수, 영수증 검증의 서버 영속화",
+      "전문가 증빙 검수 SLA, 부적절한 지역 제보 신고·삭제·이의제기 정책"
+    ]
+  },
+  "testing_and_build": {
+    "available_tests": [
+      "tests/test_auth.py",
+      "tests/test_engine.py",
+      "tests/test_receipt_ocr.py",
+      "gachi_app/test/admission_strategy_data_test.dart",
+      "gachi_app/test/insight_data_test.dart",
+      "gachi_app/test/level_test_data_test.dart",
+      "gachi_app/test/study_plan_models_test.dart",
+      "gachi_app/test/trust_wallet_test.dart",
+      "gachi_app/test/widget_test.dart"
+    ],
+    "last_known_validation": [
+      "Flutter web build was completed successfully during the latest work session.",
+      "Flutter analyze may fail in this local workspace because the path contains '&', causing a local analyzer/LSP JSON parsing issue; this is not confirmed as a source-code error.",
+      "외부 인증, OCR, 결제, 푸시, 실제 실명인증은 해당 콘솔 설정이 없으면 E2E 검증할 수 없다."
+    ],
+    "screenshots": {
+      "directory": "gachi_app/screenshots",
+      "archive": "gachi_app/GACHI_app_screenshots_2026-08-27.zip",
+      "coverage": ["인트로", "로그인", "홈", "탐색", "커뮤니티", "코치", "MY", "유료 프로그램", "매칭 전 정보", "매칭 결제", "학생 정보", "학원 지도", "AI 코치", "진단 화면"]
+    }
+  },
+  "key_code_map": {
+    "app_entry_and_navigation": "gachi_app/lib/main.dart",
+    "auth_role_and_expert_verification": "gachi_app/lib/auth_experience.dart",
+    "role_workspaces": "gachi_app/lib/role_experience.dart",
+    "admin_dashboard": "gachi_app/lib/admin_experience.dart",
+    "home_and_weekly_plan": "gachi_app/lib/home_experience.dart",
+    "community_receipt_academy_map": "gachi_app/lib/local_value_experience.dart",
+    "free_and_paid_admission_matching_payment": "gachi_app/lib/commerce_experience.dart",
+    "strategy_diagnosis_and_consultant_profiles": "gachi_app/lib/admission_strategy_experience.dart",
+    "explore_and_ai_chat": "gachi_app/lib/explore_experience.dart",
+    "backend_api": "backend/app/main.py",
+    "rule_engine": "backend/app/engine.py",
+    "official_data_operations": "docs/official-admission-data-operations.md",
+    "vertex_ai": "backend/app/vertex_ai.py",
+    "receipt_ocr": "backend/app/receipt_ocr.py",
+    "toss_payment_server": "backend/app/payments.py"
+  },
+  "recommended_next_steps": [
+    {
+      "priority": "P0",
+      "work": "운영 환경을 정하고 Supabase를 먼저 실제 연결한다.",
+      "why": "회원, 역할, 전문가 검수, 학생 정보 저장의 신뢰성은 로그인·DB 기반이 필요하다."
+    },
+    {
+      "priority": "P0",
+      "work": "공식 입시 데이터 관리자 검수 워크플로를 실제 DB와 권한 체계로 완성한다.",
+      "why": "GACHI의 핵심 차별점은 공식성·출처·갱신 이력을 가진 의사결정 정보다."
+    },
+    {
+      "priority": "P1",
+      "work": "전문가 프로필·가능 시간·실제 채팅/예약·상담권을 서버 데이터 모델로 전환한다.",
+      "why": "현재 매칭·채팅은 UX 검증용 로컬 MVP다."
+    },
+    {
+      "priority": "P1",
+      "work": "결제 방식을 플랫폼별로 확정하고 테스트 환경부터 E2E 검증한다.",
+      "why": "웹에서는 토스 등 PG, 앱 내 디지털 서비스는 각 스토어 정책과 인앱결제를 검토해야 한다."
+    },
+    {
+      "priority": "P1",
+      "work": "OCR·Vertex AI를 Cloud Run 단일 인스턴스, 일일 한도, 예산 알림, 영속 사용량 카운터와 함께 배포한다.",
+      "why": "사용자 요청에 따른 비용 상한과 개인정보 최소화 원칙을 유지하기 위해서다."
+    },
+    {
+      "priority": "P2",
+      "work": "FCM 푸시와 로컬 알림을 설계하고, 사용자의 허가·시간대·미완료 조건·수신 거부를 포함해 구현한다.",
+      "why": "현재는 앱 내 알림 UX만 있다."
+    }
+  ],
+  "run_commands": {
+    "backend": "python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && uvicorn backend.app.main:app --reload",
+    "flutter_web": "cd gachi_app && flutter pub get && flutter run -d chrome",
+    "backend_tests": "pytest",
+    "flutter_tests": "cd gachi_app && flutter test",
+    "build_web": "cd gachi_app && flutter build web"
+  }
+}
