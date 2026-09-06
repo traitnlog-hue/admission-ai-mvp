@@ -68,6 +68,7 @@ class AccountRoleException implements Exception {
 
 const _googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
 const _googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+const _authRedirectUrl = String.fromEnvironment('AUTH_REDIRECT_URL');
 const _authApiBaseUrl = String.fromEnvironment(
   'AUTH_API_BASE_URL',
   defaultValue: 'http://127.0.0.1:8000',
@@ -86,7 +87,25 @@ class SupabaseAuthService {
 
   static bool get isEnabled => _initialized;
 
-  static String? get emailRedirectUrl => kIsWeb ? Uri.base.origin : null;
+  /// OAuth 콜백은 현재 앱의 경로까지 보존한다.
+  ///
+  /// GitHub Pages 프로젝트 배포는 `https://<account>.github.io/<repo>/`처럼
+  /// origin 아래에 앱이 위치한다. `Uri.base.origin`만 사용하면 OAuth가
+  /// 계정 루트로 돌아가며 Flutter 앱이 콜백 code를 받을 수 없다.
+  /// 배포 환경에서는 AUTH_REDIRECT_URL을 우선 사용하고, 개발 환경에서는
+  /// 현재 열려 있는 앱의 경로를 그대로 사용한다.
+  static String? get emailRedirectUrl {
+    if (!kIsWeb) return null;
+    if (_authRedirectUrl.isNotEmpty) return _authRedirectUrl;
+
+    final current = Uri.base;
+    final normalizedPath = current.path.endsWith('/')
+        ? current.path
+        : '${current.path}/';
+    return current
+        .replace(path: normalizedPath, queryParameters: const {}, fragment: '')
+        .toString();
+  }
 
   static Future<void> initialize() async {
     if (_supabaseUrl.isEmpty || _supabasePublishableKey.isEmpty) return;
@@ -173,7 +192,8 @@ class SupabaseAuthService {
     }
     return AccountRoleResult(
       user: fromUser(next),
-      needsConsultantVerification: response['status'] == 'verification_required',
+      needsConsultantVerification:
+          response['status'] == 'verification_required',
     );
   }
 
@@ -394,16 +414,15 @@ class _AuthGateState extends State<AuthGate> {
                     .where((role) => role.name == roleName)
                     .firstOrNull;
                 if (selected != null) {
-                  sessionUser = (await SupabaseAuthService.selectAccountRole(selected)).user;
+                  sessionUser = (await SupabaseAuthService.selectAccountRole(
+                    selected,
+                  )).user;
                 }
               }
             } catch (_) {
               // OAuth 콜백에서 역할 동기화가 늦어져도 현재 계정 세션은 유지한다.
             }
-            await _authenticate(
-              sessionUser,
-              persist: false,
-            );
+            await _authenticate(sessionUser, persist: false);
           } else if (state.event == AuthChangeEvent.signedOut && mounted) {
             setState(() => user = null);
           }
@@ -546,7 +565,10 @@ class _LoginPageState extends State<LoginPage> {
     });
     try {
       final preferences = await SharedPreferences.getInstance();
-      await preferences.setString(_AuthGateState._pendingRoleKey, selectedRole.name);
+      await preferences.setString(
+        _AuthGateState._pendingRoleKey,
+        selectedRole.name,
+      );
       await SupabaseAuthService.signInWithGoogle();
     } on AuthException catch (error) {
       if (mounted) setState(() => errorMessage = _authErrorMessage(error));
@@ -600,7 +622,9 @@ class _LoginPageState extends State<LoginPage> {
               name: name,
             );
       if (SupabaseAuthService.isEnabled) {
-        final roleResult = await SupabaseAuthService.selectAccountRole(selectedRole);
+        final roleResult = await SupabaseAuthService.selectAccountRole(
+          selectedRole,
+        );
         user = roleResult.user;
         if (roleResult.needsConsultantVerification && mounted) {
           confirmationMessage = '입시 전문가 활동을 위해 경력 증명서·자격증 등 입증 자료를 제출해 주세요. 관리자 승인 전에는 전문가 권한이 부여되지 않습니다.';
@@ -979,7 +1003,10 @@ class _RoleSelector extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      Text(
+        title,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
       const SizedBox(height: 8),
       Wrap(
         spacing: 8,
@@ -989,10 +1016,14 @@ class _RoleSelector extends StatelessWidget {
               (role) => ChoiceChip(
                 label: Text(role.label),
                 selected: selected == role,
-                onSelected: onSelected == null ? null : (_) => onSelected!(role),
+                onSelected: onSelected == null
+                    ? null
+                    : (_) => onSelected!(role),
                 showCheckmark: false,
                 selectedColor: lavender,
-                side: BorderSide(color: selected == role ? lime : const Color(0xffD9DEE8)),
+                side: BorderSide(
+                  color: selected == role ? lime : const Color(0xffD9DEE8),
+                ),
                 labelStyle: TextStyle(
                   color: selected == role ? lime : text,
                   fontWeight: FontWeight.w600,
@@ -1085,7 +1116,8 @@ class _ConsultantVerificationPageState
     try {
       final paths = <String>[];
       for (final file in files) {
-        final path = '${authUser.id}/${DateTime.now().microsecondsSinceEpoch}_${_safeFileName(file.name)}';
+        final path =
+            '${authUser.id}/${DateTime.now().microsecondsSinceEpoch}_${_safeFileName(file.name)}';
         final uploaded = await Supabase.instance.client.storage
             .from('consultant-verification')
             .uploadBinary(
@@ -1110,9 +1142,11 @@ class _ConsultantVerificationPageState
           });
       if (mounted) setState(() => completed = true);
     } on StorageException catch (exception) {
-      if (mounted) setState(() => error = '파일을 저장하지 못했습니다. ${exception.message}');
+      if (mounted)
+        setState(() => error = '파일을 저장하지 못했습니다. ${exception.message}');
     } on PostgrestException catch (exception) {
-      if (mounted) setState(() => error = '검증 신청을 저장하지 못했습니다. ${exception.message}');
+      if (mounted)
+        setState(() => error = '검증 신청을 저장하지 못했습니다. ${exception.message}');
     } catch (_) {
       if (mounted) setState(() => error = '제출 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
@@ -1145,7 +1179,11 @@ class _ConsultantVerificationPageState
         children: [
           const Text(
             '입증 자료를 제출해 주세요.',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, letterSpacing: -1.2),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -1.2,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -1167,7 +1205,11 @@ class _ConsultantVerificationPageState
                 Expanded(
                   child: Text(
                     '제출 자료는 공개되지 않습니다. 본인과 관리자만 열람할 수 있으며, 검토 목적 외에는 사용하지 않습니다.',
-                    style: TextStyle(color: Color(0xff35517D), fontSize: 11, height: 1.55),
+                    style: TextStyle(
+                      color: Color(0xff35517D),
+                      fontSize: 11,
+                      height: 1.55,
+                    ),
                   ),
                 ),
               ],
@@ -1179,15 +1221,23 @@ class _ConsultantVerificationPageState
           DropdownButtonFormField<String>(
             value: consultantType,
             items: const [
-              DropdownMenuItem(value: 'admission_consultant', child: Text('입시 컨설턴트')),
+              DropdownMenuItem(
+                value: 'admission_consultant',
+                child: Text('입시 컨설턴트'),
+              ),
               DropdownMenuItem(value: 'academy_staff', child: Text('학원 관계자')),
               DropdownMenuItem(value: 'instructor', child: Text('강사')),
             ],
-            onChanged: completed ? null : (value) => setState(() => consultantType = value!),
+            onChanged: completed
+                ? null
+                : (value) => setState(() => consultantType = value!),
             decoration: const InputDecoration(border: OutlineInputBorder()),
           ),
           const SizedBox(height: 20),
-          const Text('경력·전문 분야 소개 (선택)', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            '경력·전문 분야 소개 (선택)',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: careerController,
@@ -1202,47 +1252,105 @@ class _ConsultantVerificationPageState
           const SizedBox(height: 14),
           const Text('입증 자료', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          const Text('PDF, JPG, PNG, WEBP · 최대 5개 · 파일당 10MB', style: TextStyle(color: mute, fontSize: 11)),
+          const Text(
+            'PDF, JPG, PNG, WEBP · 최대 5개 · 파일당 10MB',
+            style: TextStyle(color: mute, fontSize: 11),
+          ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
             onPressed: completed || submitting ? null : _pickFiles,
             icon: const Icon(Icons.upload_file_outlined),
             label: const Text('경력 증명서·자격증·입증 자료 첨부'),
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
           ),
           if (files.isNotEmpty) ...[
             const SizedBox(height: 10),
-            ...files.map((file) => Container(
-              margin: const EdgeInsets.only(bottom: 7),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(12)),
-              child: Row(children: [
-                const Icon(Icons.description_outlined, color: lime, size: 18),
-                const SizedBox(width: 8),
-                Expanded(child: Text(file.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11))),
-                Text('${(file.size / 1024 / 1024).toStringAsFixed(1)}MB', style: const TextStyle(color: mute, fontSize: 10)),
-              ]),
-            )),
+            ...files.map(
+              (file) => Container(
+                margin: const EdgeInsets.only(bottom: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.description_outlined,
+                      color: lime,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        file.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                    Text(
+                      '${(file.size / 1024 / 1024).toStringAsFixed(1)}MB',
+                      style: const TextStyle(color: mute, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
           if (error != null) ...[
             const SizedBox(height: 12),
-            Text(error!, style: const TextStyle(color: Color(0xffA53C24), fontSize: 11, height: 1.5)),
+            Text(
+              error!,
+              style: const TextStyle(
+                color: Color(0xffA53C24),
+                fontSize: 11,
+                height: 1.5,
+              ),
+            ),
           ],
           if (completed) ...[
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: const Color(0xffEAF7F0), borderRadius: BorderRadius.circular(14)),
-              child: Text('$_typeLabel 등록 자료를 제출했어요. 관리자 검토가 완료되면 입시 전문가 화면이 활성화됩니다.', style: const TextStyle(color: Color(0xff176B47), fontSize: 12, height: 1.5)),
+              decoration: BoxDecoration(
+                color: const Color(0xffEAF7F0),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                '$_typeLabel 등록 자료를 제출했어요. 관리자 검토가 완료되면 입시 전문가 화면이 활성화됩니다.',
+                style: const TextStyle(
+                  color: Color(0xff176B47),
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
             ),
           ],
           const SizedBox(height: 22),
           FilledButton(
             onPressed: completed || submitting ? null : _submit,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
-            child: Text(submitting ? '제출 중...' : completed ? '검토 대기 중' : '검토 신청하기'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(54),
+            ),
+            child: Text(
+              submitting
+                  ? '제출 중...'
+                  : completed
+                  ? '검토 대기 중'
+                  : '검토 신청하기',
+            ),
           ),
-          TextButton(onPressed: completed ? widget.onDefer : (submitting ? null : widget.onDefer), child: const Text('나중에 제출할게요')),
+          TextButton(
+            onPressed: completed
+                ? widget.onDefer
+                : (submitting ? null : widget.onDefer),
+            child: const Text('나중에 제출할게요'),
+          ),
         ],
       ),
     ),

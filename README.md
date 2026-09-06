@@ -34,9 +34,15 @@ Flutter 앱은 기본적으로 `http://127.0.0.1:8000`의 API를 사용합니다
   **Authentication > URL Configuration**의 Redirect URLs에 등록하세요.
 - 기존 FastAPI `/api/auth/*` 계정/세션 API는 로컬 개발 호환용으로 유지됩니다.
   운영 환경은 HTTPS를 적용하고 `GACHI_AUTH_PEPPER`를 서버 비밀값으로 설정하세요.
-- 웹 Google 로그인은 Google Cloud에서 Web OAuth 클라이언트를 만든 뒤 실행 시
-  `--dart-define=GOOGLE_CLIENT_ID=...apps.googleusercontent.com`을 전달해야 합니다.
-  `http://localhost:7357`, 운영 도메인 등을 승인된 JavaScript 원본에 등록하세요.
+- 웹 Google 로그인은 Supabase Auth의 Google provider를 사용합니다. Google Cloud의
+  Web OAuth 클라이언트에는 **Authorized JavaScript origins**로
+  `https://traitnlog-hue.github.io`를, **Authorized redirect URIs**로
+  `https://pimaydummhqoacrezkco.supabase.co/auth/v1/callback`을 등록해야 합니다.
+  Supabase Dashboard의 **Authentication > URL Configuration**에는
+  `https://traitnlog-hue.github.io/admission-ai-mvp/`를 Redirect URLs로 등록하세요.
+  GitHub Pages 배포는 이 주소를 `AUTH_REDIRECT_URL`로 고정해 OAuth 완료 뒤에도
+  `/admission-ai-mvp/` 앱 경로로 정확히 돌아옵니다. 로컬 개발은
+  `http://localhost:7357` 등 실제 실행 주소를 함께 등록합니다.
 - Android/iOS는 각 플랫폼 OAuth 설정 파일과 서명 인증서 등록이 별도로 필요합니다.
 - 실명인증은 PASS/NICE/KCB 등 사업자 계약 후 서버의
   `IDENTITY_VERIFICATION_URL`을 설정해야 시작됩니다. 앱은 주민등록번호나 신분증
