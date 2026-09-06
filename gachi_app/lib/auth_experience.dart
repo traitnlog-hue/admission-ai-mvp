@@ -73,6 +73,10 @@ const _authApiBaseUrl = String.fromEnvironment(
   'AUTH_API_BASE_URL',
   defaultValue: 'http://127.0.0.1:8000',
 );
+const _aiChatApiBaseUrl = String.fromEnvironment(
+  'AI_CHAT_API_BASE_URL',
+  defaultValue: 'http://127.0.0.1:8000',
+);
 const _supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
   defaultValue: 'https://pimaydummhqoacrezkco.supabase.co',

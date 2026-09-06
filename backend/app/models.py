@@ -81,6 +81,29 @@ class AiAdmissionAnalysis(BaseModel):
     disclaimer: str = Field(min_length=1, max_length=300)
 
 
+class AiChatMessage(BaseModel):
+    """AI 코치 대화에 전달하는 최소 메시지 단위.
+
+    역할과 길이를 서버에서 제한해 프롬프트 주입과 과도한 토큰 사용을 줄인다.
+    """
+
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=800)
+
+    @field_validator("content")
+    @classmethod
+    def clean_content(cls, value: str) -> str:
+        return value.strip()
+
+
+class AiChatRequest(BaseModel):
+    messages: List[AiChatMessage] = Field(min_length=1, max_length=10)
+
+
+class AiChatResponse(BaseModel):
+    reply: str = Field(min_length=1, max_length=900)
+
+
 class ReceiptOcrRequest(BaseModel):
     image_base64: str = Field(min_length=40, max_length=7_000_000)
     mime_type: Literal["image/jpeg", "image/png", "image/webp"]
