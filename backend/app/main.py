@@ -13,12 +13,13 @@ from .auth import initialize_auth, login, logout, register, user_for_token
 from .engine import analyze
 from .importer import parse_official_csv
 from .official_data import import_reviewed_admissions, sources as official_sources
-from .models import AiAdmissionAnalysis, AnalysisResult, PaymentConfirmRequest, PaymentPrepareRequest, ReceiptOcrRequest, ReceiptOcrResult, StudentProfile
+from .models import AiAdmissionAnalysis, AiChatRequest, AiChatResponse, AnalysisResult, PaymentConfirmRequest, PaymentPrepareRequest, ReceiptOcrRequest, ReceiptOcrResult, StudentProfile
 from .payments import confirm_order, prepare_order
 from .receipt_ocr import scan_receipt
 from .vertex_ai import generate_ai_analysis
+from .ai_chat import generate_ai_chat, verified_supabase_user
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(os.getenv("GACHI_ROOT_DIR", Path(__file__).resolve().parents[2]))
 FRONTEND_DIR = ROOT_DIR / "frontend"
 
 app = FastAPI(title="진로입시 AI API", version="0.1.0")
@@ -33,6 +34,7 @@ app.add_middleware(
         "http://127.0.0.1:8080",
         "http://localhost:7397",
         "http://127.0.0.1:7397",
+        "https://traitnlog-hue.github.io",
     ],
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
@@ -53,6 +55,12 @@ def health() -> dict[str, str]:
 def _bearer_token(authorization: Optional[str]) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+    return authorization.removeprefix("Bearer ").strip()
+
+
+def _supabase_bearer_token(authorization: Optional[str]) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="로그인 후 AI 코치를 이용할 수 있습니다.")
     return authorization.removeprefix("Bearer ").strip()
 
 
@@ -206,6 +214,18 @@ def ai_admission_analysis(
     if account is None:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
     return generate_ai_analysis(profile, str(account["email"]))
+
+
+@app.post("/api/ai-chat", response_model=AiChatResponse)
+def ai_chat(
+    request: AiChatRequest,
+    authorization: Optional[str] = Header(default=None),
+) -> AiChatResponse:
+    """Supabase 로그인 회원만 이용하는 대화형 AI 코치 API."""
+    user = verified_supabase_user(_supabase_bearer_token(authorization))
+    return AiChatResponse(
+        reply=generate_ai_chat(request.messages, str(user["id"])),
+    )
 
 
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="web")

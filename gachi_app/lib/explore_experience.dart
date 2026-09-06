@@ -599,6 +599,7 @@ class ChatAssistantPage extends StatefulWidget {
 class _ChatAssistantPageState extends State<ChatAssistantPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _waiting = false;
   final List<_ChatMessage> messages = const [
     _ChatMessage(text: '안녕하세요. 학년과 가장 고민되는 과목 또는 목표를 알려주세요.', fromUser: false),
   ].toList();
@@ -610,14 +611,37 @@ class _ChatAssistantPageState extends State<ChatAssistantPage> {
     super.dispose();
   }
 
-  void _send([String? quickText]) {
+  Future<void> _send([String? quickText]) async {
+    if (_waiting) return;
     final value = (quickText ?? _controller.text).trim();
     if (value.isEmpty) return;
     _controller.clear();
     setState(() {
       messages.add(_ChatMessage(text: value, fromUser: true));
-      messages.add(_ChatMessage(text: _reply(value), fromUser: false));
+      _waiting = true;
     });
+    _scrollToBottom();
+
+    try {
+      final reply = await _AiCoachChatService.reply(messages);
+      if (!mounted) return;
+      setState(() => messages.add(_ChatMessage(text: reply, fromUser: false)));
+    } on _AiCoachChatException catch (error) {
+      if (!mounted) return;
+      setState(() => messages.add(_ChatMessage(text: error.message, fromUser: false)));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => messages.add(const _ChatMessage(
+        text: '네트워크 연결을 확인한 뒤 다시 시도해 주세요.',
+        fromUser: false,
+      )));
+    } finally {
+      if (mounted) setState(() => _waiting = false);
+      _scrollToBottom();
+    }
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -627,30 +651,6 @@ class _ChatAssistantPageState extends State<ChatAssistantPage> {
         );
       }
     });
-  }
-
-  String _reply(String input) {
-    final message = input.toLowerCase();
-    if (message.contains('진단') || message.contains('레벨')) {
-      return '무료 진단은 국어·영어·수학 중 한 과목을 선택해 20문항을 풀어요. 탐색 탭의 GACHI LEVEL에서 시작할 수 있습니다.';
-    }
-    if (message.contains('목표') || message.contains('플랜')) {
-      return '홈에서 목표 추가를 누르고 과목, 기간, 주간 시간, 약점과 성공 기준을 입력해 보세요. 입력 즉시 이번 주 실행 과제가 만들어집니다.';
-    }
-    if (message.contains('대학') ||
-        message.contains('입시') ||
-        message.contains('전형')) {
-      return '탐색 탭의 GACHI ADMISSION에서 SKY·의치한약수·관심 전공을 고르고 무료 준비도를 확인해 보세요. AI 코치가 전형 방향과 이번 주 보완 과제를 제안하고, PRO에서 대학·전형별 GAP과 4주 로드맵으로 확장합니다.';
-    }
-    if (message.contains('고교') || message.contains('학교')) {
-      return 'GACHI HIGH에서 내신 관리, 심화 학습, 진로 활동 중 우선순위를 고르면 적합한 고교 환경과 확인할 항목을 안내해 드려요.';
-    }
-    if (message.contains('2026') ||
-        message.contains('교육청') ||
-        message.contains('정보')) {
-      return '2026 입시 인사이트에서 현재 중1부터 고3까지 학년별 공식 정보를 확인할 수 있습니다. 각 카드의 공식 원문도 바로 열 수 있어요.';
-    }
-    return '말씀하신 내용을 기준으로는 먼저 현재 수준을 진단하고, 한 가지 목표를 이번 주 행동으로 나누는 것이 좋아요. 학년과 가장 고민되는 과목을 함께 알려주세요.';
   }
 
   @override
@@ -668,9 +668,10 @@ class _ChatAssistantPageState extends State<ChatAssistantPage> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-              itemCount: messages.length,
-              itemBuilder: (context, index) =>
-                  _ChatBubble(message: messages[index]),
+              itemCount: messages.length + (_waiting ? 1 : 0),
+              itemBuilder: (context, index) => index == messages.length
+                  ? const _ChatWaitingBubble()
+                  : _ChatBubble(message: messages[index]),
             ),
           ),
           Container(
@@ -684,7 +685,7 @@ class _ChatAssistantPageState extends State<ChatAssistantPage> {
                     minLines: 1,
                     maxLines: 4,
                     textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _send(),
+                  onSubmitted: (_) => _send(),
                     decoration: InputDecoration(
                       hintText: '궁금한 내용을 입력하세요',
                       filled: true,
@@ -703,9 +704,18 @@ class _ChatAssistantPageState extends State<ChatAssistantPage> {
                 const SizedBox(width: 7),
                 IconButton.filled(
                   tooltip: '메시지 보내기',
-                  onPressed: _send,
+                  onPressed: _waiting ? null : _send,
                   style: IconButton.styleFrom(backgroundColor: lime),
-                  icon: const Icon(Icons.arrow_upward_rounded),
+                  icon: _waiting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.arrow_upward_rounded),
                 ),
               ],
             ),
@@ -721,6 +731,81 @@ class _ChatMessage {
   final bool fromUser;
 
   const _ChatMessage({required this.text, required this.fromUser});
+}
+
+class _AiCoachChatException implements Exception {
+  final String message;
+  const _AiCoachChatException(this.message);
+}
+
+class _AiCoachChatService {
+  static Future<String> reply(List<_ChatMessage> messages) async {
+    if (!SupabaseAuthService.isEnabled) {
+      throw const _AiCoachChatException('AI 코치 설정을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      throw const _AiCoachChatException('AI 코치는 로그인한 회원만 이용할 수 있어요. 로그인 후 다시 시작해 주세요.');
+    }
+    if (_aiChatApiBaseUrl.isEmpty) {
+      throw const _AiCoachChatException('AI 코치 서버 연결을 준비하고 있습니다. 잠시 후 다시 시도해 주세요.');
+    }
+
+    final history = messages.length > 10
+        ? messages.sublist(messages.length - 10)
+        : messages;
+    final response = await http
+        .post(
+          Uri.parse('${_aiChatApiBaseUrl.replaceFirst(RegExp(r'/+$'), '')}/api/ai-chat'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${session.accessToken}',
+          },
+          body: jsonEncode({
+            'messages': history
+                .map((message) => {
+                      'role': message.fromUser ? 'user' : 'assistant',
+                      'content': message.text,
+                    })
+                .toList(),
+          }),
+        )
+        .timeout(const Duration(seconds: 25));
+
+    final body = response.body.isEmpty
+        ? const <String, dynamic>{}
+        : jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw _AiCoachChatException(
+        body['detail']?.toString() ?? 'AI 코치가 답변을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+      );
+    }
+    final reply = body['reply']?.toString().trim() ?? '';
+    if (reply.isEmpty) {
+      throw const _AiCoachChatException('AI 코치가 답변을 준비하지 못했습니다. 다시 시도해 주세요.');
+    }
+    return reply;
+  }
+}
+
+class _ChatWaitingBubble extends StatelessWidget {
+  const _ChatWaitingBubble();
+
+  @override
+  Widget build(BuildContext context) => const Align(
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: EdgeInsets.only(bottom: 9),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+          SizedBox(width: 8),
+          Text('GACHI AI가 답변을 정리하고 있어요.', style: TextStyle(color: mute, fontSize: 12)),
+        ],
+      ),
+    ),
+  );
 }
 
 class _ChatBubble extends StatelessWidget {

@@ -1,0 +1,12 @@
+.git
+.github
+.dart_tool
+gachi_app/.dart_tool
+gachi_app/build
+output
+scripts
+tmp
+__pycache__
+*.pyc
+.venv
+backend/data/*.sqlite3
