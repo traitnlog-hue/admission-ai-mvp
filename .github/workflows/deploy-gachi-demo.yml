@@ -37,6 +37,7 @@ jobs:
         run: >
           flutter build web --release --base-href /admission-ai-mvp/
           --dart-define=AUTH_REDIRECT_URL=https://traitnlog-hue.github.io/admission-ai-mvp/
+          --dart-define=AI_CHAT_API_BASE_URL=https://gachi-ai-api-733633562926.asia-northeast3.run.app
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
